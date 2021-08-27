@@ -1,14 +1,15 @@
+import 'package:flutter_web_browser/flutter_web_browser.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/gmail/v1.dart' as gmail;
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
-import 'package:url_launcher/url_launcher.dart';
+// import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SecureStorage {
   final storage = FlutterSecureStorage();
   //Save Credentials
   Future saveCredentials(AccessToken token, String refreshToken) async {
-    
     print(token.expiry.toIso8601String());
     await storage.write(key: "type", value: token.type);
     await storage.write(key: "data", value: token.data);
@@ -27,7 +28,6 @@ class SecureStorage {
     return storage.deleteAll();
   }
 }
-
 
 // const _clientId =
 //     '1096412623635-63s715t2qdkm129mh0f84kj5e2sr7luo.apps.googleusercontent.com';
@@ -49,9 +49,11 @@ class GMail {
     if (credentials.isEmpty) {
       //Needs user authentication
       var authClient = await clientViaUserConsent(
-          ClientId(_clientId, _clientSecret), _scopes, (url) {
+          ClientId(_clientId, _clientSecret), _scopes, (url) async {
         //Open Url in Browser
-        launch(url);
+        // launch(url);
+        await FlutterWebBrowser.openWebPage(url: "$url");
+        // _handleSignIn(url);
       });
       //Save Credentials
       await storage.saveCredentials(authClient.credentials.accessToken,
@@ -69,6 +71,22 @@ class GMail {
     }
   }
 
+  Future<void> _handleSignIn(String url) async {
+    GoogleSignIn _googleSignIn = GoogleSignIn(clientId:"183670288267-k6flall0oent8uie5g5rjvs5povk9oi8.apps.googleusercontent.com");
+    try {
+      GoogleSignInAccount user = await _googleSignIn.signIn();
+
+      GoogleSignInAuthentication googleSignInAuthentication =
+          await user.authentication;
+
+      print(googleSignInAuthentication.accessToken);
+      print(googleSignInAuthentication.idToken);
+    } catch (error) {
+      print("this is error ============> ");
+      print(error);
+    }
+  }
+
   Future<List<gmail.Message>> getMessage() async {
     List<gmail.Message> data = [];
     var client = await getHttpClient();
@@ -78,11 +96,20 @@ class GMail {
       gmail.ListMessagesResponse fileList = await mails.users.messages
           .list("me", includeSpamTrash: false, maxResults: 15);
       print(fileList.toJson());
-      for (gmail.Message message in fileList.messages) {
-        var res = await mails.users.messages
-            .get("me", "${message.id}", format: "full");
-        data.add(res);
+      var check = 0;
+      for(var i =0; i < fileList.messages.length; i++) {
+        if(check == i)
+        await mails.users.messages
+          .get("me", "${fileList.messages[i].id}", format: "full").then((res) {
+            data.add(res);
+            check = check + 1;
+          });
       }
+      // for (gmail.Message message in fileList.messages) {
+      //   var res = await mails.users.messages
+      //     .get("me", "${message.id}", format: "full");
+      //   data.add(res);
+      // }
     } catch (e) {
       // await this.storage.clear();
       // getMessage();
@@ -118,6 +145,3 @@ class GmailMoel {
 
   GmailMoel(this.recieveFrom, this.snippet);
 }
-
-
-

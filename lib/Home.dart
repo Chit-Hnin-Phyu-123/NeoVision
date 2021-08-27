@@ -30,7 +30,7 @@ class Home extends StatefulWidget {
   _HomeState createState() => _HomeState();
 }
 
-enum PopupMenuChoices { setting, voices, logout }
+enum PopupMenuChoices { setting, voices, logout, login }
 
 class _HomeState extends State<Home> {
   // FlutterTts flutterTts;
@@ -68,10 +68,8 @@ class _HomeState extends State<Home> {
   @override
   initState() {
     super.initState();
-    // initTts();
     openWelcomeVoice();
     initSpeechState();
-    // getemailList();
     getMessage();
   }
 
@@ -218,6 +216,16 @@ class _HomeState extends State<Home> {
 
   String chosenVoiceOwner = "";
 
+  Map<String, dynamic> credentials;
+
+  Future<void> getCredentialsFunc() async {
+    final storage = SecureStorage();
+    var cre = await storage.getCredential();
+    setState(() {
+      credentials = cre;
+    });
+  }
+
   Future openWelcomeVoice() async {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
     if (sharedPreferences.getString("ChooseVoice") == null) {
@@ -349,13 +357,13 @@ class _HomeState extends State<Home> {
   List remainTextList = [];
 
   bool checkSpeech = false;
-  // var check = 0;
+  var check = 0;
 
   Future _speak(speechFromUser, text, bool isReadAll) async {
     // await flutterTts.setVolume(volume);
     // await flutterTts.setSpeechRate(rate);
     // await flutterTts.setPitch(pitch);
-    _stop().then((value) async {
+    // _stop().then((value) async {
       if (text != null) {
         if (text.isNotEmpty) {
           if (checkSpeech == true) {
@@ -367,7 +375,7 @@ class _HomeState extends State<Home> {
           // await flutterTts.awaitSpeakCompletion(true);
           checkSpeech = false;
           if (isReadAll == true) {
-            var check = 0;
+            
             for (var a = 0; a < emailList.length; a++) {
               String speechText =
                   "${emailList[a]["Subject"]} from ${emailList[a]["From"]}";
@@ -382,7 +390,7 @@ class _HomeState extends State<Home> {
                       .then((value) {
                     print("$speechText ========> $value");
                     checkSpeech = true;
-                    check = check + 1;
+                    
                     setState(() {
                       lastSpeechWord = speechText;
                       lastWords = lastSpeechWord;
@@ -390,11 +398,11 @@ class _HomeState extends State<Home> {
                   });
 
                   String getsenderName = speechText.toString().substring(
-                      speechText.toString().indexOf("from "),
+                      speechText.toString().lastIndexOf("from "),
                       speechText.toString().length);
                   String getSubject = speechText
                       .toString()
-                      .substring(0, speechText.toString().indexOf("from "));
+                      .substring(0, speechText.toString().lastIndexOf("from "));
                   readEmail = {
                     "From": getsenderName.replaceAll(" from ", ""),
                     "Subject": getSubject
@@ -409,9 +417,9 @@ class _HomeState extends State<Home> {
             });
 
             String getsenderName = text.toString().substring(
-                text.toString().indexOf("from "), text.toString().length);
+                text.toString().lastIndexOf("from "), text.toString().length);
             String getSubject =
-                text.toString().substring(0, text.toString().indexOf(" from "));
+                text.toString().substring(0, text.toString().lastIndexOf(" from "));
             readEmail = {
               "From": getsenderName.replaceAll("from ", ""),
               "Subject": getSubject
@@ -419,7 +427,7 @@ class _HomeState extends State<Home> {
           }
         }
       }
-    });
+    // });
   }
 
   bool isStop = false;
@@ -487,6 +495,7 @@ class _HomeState extends State<Home> {
             text.toLowerCase() == "read all email" ||
             text.toLowerCase() == "read all emails") {
           // check = 0;
+          print("The text is ==> " +text);
           await _speak(text, "$text", true);
         } else {
           if (text.toLowerCase() == "read this" ||
@@ -697,6 +706,7 @@ class _HomeState extends State<Home> {
 
       audioPlayer.play(file.path, isLocal: true).then((value) {
         print("success =========> $value");
+        check = check + 1;
       }).catchError((error) {
         print("error =======> $error");
       });
@@ -727,12 +737,16 @@ class _HomeState extends State<Home> {
         Navigator.pushReplacement(
             context, MaterialPageRoute(builder: (context) => Home()));
         break;
+      case PopupMenuChoices.login:
+        getMessage();
+        break;
       default:
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    getCredentialsFunc();
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
@@ -787,6 +801,7 @@ class _HomeState extends State<Home> {
                                     ],
                                   ),
                                 ),
+                                if(credentials.isNotEmpty)
                                 PopupMenuItem<PopupMenuChoices>(
                                   value: PopupMenuChoices.logout,
                                   child: Row(
@@ -797,6 +812,24 @@ class _HomeState extends State<Home> {
                                       ),
                                       SizedBox(width: 10),
                                       Text("Logout",
+                                          style: TextStyle(
+                                              fontSize: 15,
+                                              color: Colors.grey[600],
+                                              fontFamily: "Abel-Regular")),
+                                    ],
+                                  ),
+                                ),
+                                if(credentials.isEmpty)
+                                PopupMenuItem<PopupMenuChoices>(
+                                  value: PopupMenuChoices.login,
+                                  child: Row(
+                                    children: <Widget>[
+                                      Icon(
+                                        Icons.input,
+                                        color: Colors.grey[600],
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text("Login",
                                           style: TextStyle(
                                               fontSize: 15,
                                               color: Colors.grey[600],
@@ -1013,6 +1046,7 @@ class _HomeState extends State<Home> {
                                           onTap: () {
                                             print("Right");
                                             if (emailList.length != 0) {
+                                              // print("jjjjjjjjjj=> " + readEmail.toString());
                                               if (readEmail != null &&
                                                   emailList.indexWhere((element) =>
                                                           element["From"] ==
@@ -1038,13 +1072,14 @@ class _HomeState extends State<Home> {
                                                 //     emailList.where(
                                                 //         (element) =>
                                                 //             element["From"].toString() == readEmail["From"].toString() && element["Subject"].toString() == readEmail["Subject"].toString()));
-                                                print(emailList.indexWhere(
-                                                    (element) =>
-                                                        element["From"] ==
-                                                            readEmail["From"] &&
-                                                        element["Subject"] ==
-                                                            readEmail[
-                                                                "Subject"]));
+                                                // print(emailList.indexWhere(
+                                                //     (element) =>
+                                                //         element["From"] ==
+                                                //             readEmail["From"] &&
+                                                //         element["Subject"] ==
+                                                //             readEmail[
+                                                //                 "Subject"]));
+                                                // print("${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["Subject"]} from ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["From"]}");
                                                 _speak(
                                                     "",
                                                     "${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["Subject"]} from ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["From"]}",
@@ -1102,7 +1137,7 @@ class _HomeState extends State<Home> {
               Align(
                 alignment: Alignment.bottomCenter,
                 child: Text(
-                  "Version 1.0.11",
+                  "Version 1.0.12",
                   style: TextStyle(color: Colors.grey[400], fontSize: 14),
                 ),
               )

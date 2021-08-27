@@ -143,7 +143,6 @@ class _ChooseVoiceState extends State<ChooseVoice> {
                             setState(() {
                               chosenVoice = onchangedVoiceList[i];
                             });
-                            speak(onchangedVoiceList[i]);
                           },
                           child: Container(
                             decoration: BoxDecoration(
@@ -171,9 +170,14 @@ class _ChooseVoiceState extends State<ChooseVoice> {
                                   ),
                                   if (chosenVoice.toString() ==
                                       onchangedVoiceList[i].toString())
-                                    Icon(
-                                      Icons.volume_up,
-                                      color: Colors.blue,
+                                    GestureDetector(
+                                      onTap: () {
+                                        speak(onchangedVoiceList[i]);
+                                      },
+                                      child: Icon(
+                                        Icons.volume_up,
+                                        color: Colors.blue,
+                                      ),
                                     )
                                 ],
                               ),
