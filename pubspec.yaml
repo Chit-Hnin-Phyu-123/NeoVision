@@ -31,7 +31,7 @@ dependencies:
   path_provider: any
   xml: any
   audioplayers: any
-  # imap_client: any
+  imap_client: any
   # flutter_html: any
   # enough_mail: any
   shared_preferences: any

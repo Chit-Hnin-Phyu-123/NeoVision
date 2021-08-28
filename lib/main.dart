@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'Home.dart';
 import 'Login.dart';
 
-var userDetailList;
+var isLogin;
 void main() {
   runApp(MyApp());
 }
@@ -17,15 +17,15 @@ class _MyAppState extends State<MyApp> {
   @override
   initState() {
     super.initState();
-    // checkLogin();
+    checkLogin();
   }
 
-  // Future<void> checkLogin() async {
-  //   SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
-  //   setState(() {
-  //     userDetailList = sharedPreferences.getString("UserDetail");
-  //   });
-  // }
+  Future<void> checkLogin() async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    setState(() {
+      isLogin = sharedPreferences.getString("LoginType");
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,8 +36,8 @@ class _MyAppState extends State<MyApp> {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      // home: userDetailList == null ? Login() : Home(),
-      home: Home(),
+      home: isLogin == null ? Login() : Home(),
+      // home: Home(),
     );
   }
 }

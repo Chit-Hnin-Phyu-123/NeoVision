@@ -154,6 +154,8 @@ class _LoginState extends State<Login> {
                             sharedPreferences.setString(
                                 "UserDetail", json.encode(userDetail));
 
+                            sharedPreferences.setString("LoginType", "ImapLogin");
+
                             Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
                           }
                         },
@@ -176,8 +178,12 @@ class _LoginState extends State<Login> {
                         height: 30,
                       ),
                       GestureDetector(
-                        onTap: () {
-                          
+                        onTap: () async {
+                          SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+                          await GMail().getHttpClient().then((value) {
+                            sharedPreferences.setString("LoginType", "GoogleLogin");
+                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
+                          });
                         },
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,

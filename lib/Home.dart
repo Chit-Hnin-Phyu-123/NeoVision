@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:http/http.dart' as http;
+import 'package:imap_client/imap_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xml/xml.dart' as xml;
 import 'package:path_provider/path_provider.dart';
@@ -30,7 +31,7 @@ class Home extends StatefulWidget {
   _HomeState createState() => _HomeState();
 }
 
-enum PopupMenuChoices { setting, voices, logout, login }
+enum PopupMenuChoices { setting, voices, logout}
 
 class _HomeState extends State<Home> {
   // FlutterTts flutterTts;
@@ -70,23 +71,35 @@ class _HomeState extends State<Home> {
     super.initState();
     openWelcomeVoice();
     initSpeechState();
-    getMessage();
+    checkLoginType();
+  }
+
+  Future<void> checkLoginType() async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+
+    if(sharedPreferences.getString("LoginType") == "ImapLogin") {
+      getemailList();
+    } else if(sharedPreferences.getString("LoginType") == "GoogleLogin") {
+      getMessage();
+    } else {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Login()));
+    }
   }
 
   final mails = GMail();
   List<GmailMoel> list = [];
 
-  List<gmail.Thread> listThead = [];
-  List<gmail.Message> listMessage = [];
+  // List<gmail.Thread> listThead = [];
+  // List<gmail.Message> listMessage = [];
 
   int count = 0;
 
-  void updateList() async {
-    listThead = (await mails.getThread());
-    setState(() {
-      count = listThead.length;
-    });
-  }
+  // void updateList() async {
+  //   listThead = (await mails.getThread());
+  //   setState(() {
+  //     count = listThead.length;
+  //   });
+  // }
 
   getMessage() async {
     await mails.getMessage().then((value) {
@@ -143,74 +156,78 @@ class _HomeState extends State<Home> {
 
   List emailList = [];
 
-  // Future<void> getemailList() async {
-  //   SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
-  //   var userDetail = json.decode(sharedPreferences.getString("UserDetail"));
-  //   printImapClientDebugLog();
-  //   ImapClient client = new ImapClient();
-  //   await client.connect("imap.gmail.com", 993, true);
-  //   print("success1");
-  //   await client.authenticate(new ImapPlainAuth(
-  //       "${userDetail["EmailAddress"]}", "${userDetail["EmailPassword"]}"));
-  //   ImapFolder inbox = await client.getFolder("inbox");
+  Future<void> getemailList() async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    var userDetail = json.decode(sharedPreferences.getString("UserDetail"));
 
-  //   int emailListlength = 0;
-  //   if (inbox.mailCount >= 20) {
-  //     emailListlength = 20;
-  //   } else {
-  //     emailListlength = inbox.mailCount;
-  //   }
-  //   for (var i = 0; i < emailListlength; i++) {
-  //     Map<int, Map<String, dynamic>> subject = await inbox
-  //         .fetch(["BODY.PEEK[HEADER.FIELDS (SUBJECT)]"], messageIds: [i + 1]);
-  //     var mapSubjectEmail = subject[i + 1];
-  //     var mapEmail = mapSubjectEmail.values;
-  //     var subjectEmail = mapEmail.first;
-  //     var emailSubject1 = subjectEmail
-  //         .toString()
-  //         .substring(subjectEmail.toString().indexOf(": ") + 1);
-  //     var emailSubject2 = emailSubject1.replaceAll(" ", "");
-  //     var emailSubject = emailSubject2.replaceAll("\n", "");
-  //     Map<int, Map<String, dynamic>> from = await inbox
-  //         .fetch(["BODY.PEEK[HEADER.FIELDS (FROM)]"], messageIds: [i + 1]);
-  //     var mapFromEmail = from[i + 1];
-  //     var mapEmail1 = mapFromEmail.values;
-  //     var fromEmail1 = mapEmail1.first;
-  //     var fromEmail2 = fromEmail1.replaceAll(" ", "");
-  //     var fromEmail = fromEmail2.replaceAll("\n", "");
-  //     Map<int, Map<String, dynamic>> date = await inbox
-  //         .fetch(["BODY.PEEK[HEADER.FIELDS (Date)]"], messageIds: [i + 1]);
-  //     var mapDateEmail = date[i + 1];
-  //     var mapEmail2 = mapDateEmail.values;
-  //     var dateEmail1 = mapEmail2.first;
-  //     var dateEmail2 = dateEmail1.replaceAll(" ", "");
-  //     var dateEmail = dateEmail2.replaceAll("\n", "");
-  //     Map<int, Map<String, dynamic>> to = await inbox
-  //         .fetch(["BODY.PEEK[HEADER.FIELDS (To)]"], messageIds: [i + 1]);
-  //     var mapToEmail = to[i + 1];
-  //     var mapEmail3 = mapToEmail.values;
-  //     var toEmail1 = mapEmail3.first;
-  //     var toEmail2 = toEmail1.replaceAll(" ", "");
-  //     var toEmail = toEmail2.replaceAll("\n", "");
+    // Enough Mail
+    printImapClientDebugLog();
+    ImapClient client = new ImapClient();
+    // await client.connect("imap.gmail.com", 993, true);
+    await client.connect("tastysoftcloud.com", 993, true);
+    print("success1");
+    await client.authenticate(new ImapPlainAuth(
+        // "${userDetail["EmailAddress"]}", "${userDetail["EmailPassword"]}"));
+        "hwy@tastysoftcloud.com", 'hwyI\$l1tt'));
+    ImapFolder inbox = await client.getFolder("inbox");
 
-  //     emailList.add({
-  //       "From":
-  //           "${fromEmail.toString().substring(fromEmail.toString().indexOf(": ") + 1)}",
-  //       "Subject": "$emailSubject",
-  //       "Date":
-  //           "${dateEmail.toString().substring(dateEmail.toString().indexOf(": ") + 1)}",
-  //       "To":
-  //           "${toEmail.toString().substring(toEmail.toString().indexOf(": ") + 1)}",
-  //     });
+    int emailListlength = 0;
+    if (inbox.mailCount >= 20) {
+      emailListlength = 20;
+    } else {
+      emailListlength = inbox.mailCount;
+    }
+    for (var i = 0; i < emailListlength; i++) {
+      Map<int, Map<String, dynamic>> subject = await inbox
+          .fetch(["BODY.PEEK[HEADER.FIELDS (SUBJECT)]"], messageIds: [i + 1]);
+      var mapSubjectEmail = subject[i + 1];
+      var mapEmail = mapSubjectEmail.values;
+      var subjectEmail = mapEmail.first;
+      var emailSubject1 = subjectEmail
+          .toString()
+          .substring(subjectEmail.toString().indexOf(": ") + 1);
+      var emailSubject2 = emailSubject1.replaceAll(" ", "");
+      var emailSubject = emailSubject2.replaceAll("\n", "");
+      Map<int, Map<String, dynamic>> from = await inbox
+          .fetch(["BODY.PEEK[HEADER.FIELDS (FROM)]"], messageIds: [i + 1]);
+      var mapFromEmail = from[i + 1];
+      var mapEmail1 = mapFromEmail.values;
+      var fromEmail1 = mapEmail1.first;
+      var fromEmail2 = fromEmail1.replaceAll(" ", "");
+      var fromEmail = fromEmail2.replaceAll("\n", "");
+      Map<int, Map<String, dynamic>> date = await inbox
+          .fetch(["BODY.PEEK[HEADER.FIELDS (Date)]"], messageIds: [i + 1]);
+      var mapDateEmail = date[i + 1];
+      var mapEmail2 = mapDateEmail.values;
+      var dateEmail1 = mapEmail2.first;
+      var dateEmail2 = dateEmail1.replaceAll(" ", "");
+      var dateEmail = dateEmail2.replaceAll("\n", "");
+      Map<int, Map<String, dynamic>> to = await inbox
+          .fetch(["BODY.PEEK[HEADER.FIELDS (To)]"], messageIds: [i + 1]);
+      var mapToEmail = to[i + 1];
+      var mapEmail3 = mapToEmail.values;
+      var toEmail1 = mapEmail3.first;
+      var toEmail2 = toEmail1.replaceAll(" ", "");
+      var toEmail = toEmail2.replaceAll("\n", "");
 
-  //     if (i + 1 == emailListlength) {
-  //       print(emailList.length);
-  //       print(emailList);
+      emailList.add({
+        "From":
+            "${fromEmail.toString().substring(fromEmail.toString().indexOf(": ") + 1)}",
+        "Subject": "$emailSubject",
+        "Date":
+            "${dateEmail.toString().substring(dateEmail.toString().indexOf(": ") + 1)}",
+        "To":
+            "${toEmail.toString().substring(toEmail.toString().indexOf(": ") + 1)}",
+      });
 
-  //       await client.logout();
-  //     }
-  //   }
-  // }
+      if (i + 1 == emailListlength) {
+        print(emailList.length);
+        print(emailList);
+
+        await client.logout();
+      }
+    }
+  }
 
   String lastSpeechWord = '';
 
@@ -729,16 +746,13 @@ class _HomeState extends State<Home> {
         });
         break;
       case PopupMenuChoices.logout:
-        // SharedPreferences sharedPreferences =
-        //     await SharedPreferences.getInstance();
-        // sharedPreferences.clear();
+        SharedPreferences sharedPreferences =
+            await SharedPreferences.getInstance();
+        sharedPreferences.clear();
         final storage = SecureStorage();
         storage.clear();
         Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => Home()));
-        break;
-      case PopupMenuChoices.login:
-        getMessage();
+            context, MaterialPageRoute(builder: (context) => Login()));
         break;
       default:
     }
@@ -801,7 +815,6 @@ class _HomeState extends State<Home> {
                                     ],
                                   ),
                                 ),
-                                if(credentials.isNotEmpty)
                                 PopupMenuItem<PopupMenuChoices>(
                                   value: PopupMenuChoices.logout,
                                   child: Row(
@@ -812,24 +825,6 @@ class _HomeState extends State<Home> {
                                       ),
                                       SizedBox(width: 10),
                                       Text("Logout",
-                                          style: TextStyle(
-                                              fontSize: 15,
-                                              color: Colors.grey[600],
-                                              fontFamily: "Abel-Regular")),
-                                    ],
-                                  ),
-                                ),
-                                if(credentials.isEmpty)
-                                PopupMenuItem<PopupMenuChoices>(
-                                  value: PopupMenuChoices.login,
-                                  child: Row(
-                                    children: <Widget>[
-                                      Icon(
-                                        Icons.input,
-                                        color: Colors.grey[600],
-                                      ),
-                                      SizedBox(width: 10),
-                                      Text("Login",
                                           style: TextStyle(
                                               fontSize: 15,
                                               color: Colors.grey[600],
