@@ -13,6 +13,7 @@ class Login extends StatefulWidget {
 
 class _LoginState extends State<Login> {
   TextEditingController emailAddressController = TextEditingController();
+  TextEditingController hostServerController = TextEditingController();
   TextEditingController emailPasswordController = TextEditingController();
   bool showPassword = false;
 
@@ -66,6 +67,36 @@ class _LoginState extends State<Login> {
                         },
                         decoration: InputDecoration(
                           hintText: "Email",
+                          hintStyle: TextStyle(color: Colors.blue),
+                          fillColor: Colors.white,
+                          filled: true,
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.white),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.white),
+                          ),
+                          border: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 30,
+                      ),
+                      TextFormField(
+                        controller: hostServerController,
+                        keyboardType: TextInputType.emailAddress,
+                        cursorColor: Colors.blue,
+                        style: TextStyle(color: Colors.blue),
+                        validator: (text) {
+                          if (text.isEmpty) {
+                            return "Enter your host server";
+                          }
+                          return null;
+                        },
+                        decoration: InputDecoration(
+                          hintText: "Host Server",
                           hintStyle: TextStyle(color: Colors.blue),
                           fillColor: Colors.white,
                           filled: true,
@@ -147,6 +178,7 @@ class _LoginState extends State<Login> {
                               {
                                 "EmailAddress":
                                     "${emailAddressController.text}",
+                                "HostServer" : "${hostServerController.text}",
                                 "EmailPassword":
                                     "${emailPasswordController.text}"
                               }

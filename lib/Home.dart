@@ -7,11 +7,10 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:http/http.dart' as http;
-import 'package:imap_client/imap_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xml/xml.dart' as xml;
 import 'package:path_provider/path_provider.dart';
-// import 'package:imap_client/imap_client.dart';
+import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/services.dart';
 // import 'package:flutter_tts/flutter_tts.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -31,7 +30,7 @@ class Home extends StatefulWidget {
   _HomeState createState() => _HomeState();
 }
 
-enum PopupMenuChoices { setting, voices, logout}
+enum PopupMenuChoices { setting, voices, logout }
 
 class _HomeState extends State<Home> {
   // FlutterTts flutterTts;
@@ -77,12 +76,13 @@ class _HomeState extends State<Home> {
   Future<void> checkLoginType() async {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
 
-    if(sharedPreferences.getString("LoginType") == "ImapLogin") {
-      getemailList();
-    } else if(sharedPreferences.getString("LoginType") == "GoogleLogin") {
+    if (sharedPreferences.getString("LoginType") == "ImapLogin") {
+      imapExample();
+    } else if (sharedPreferences.getString("LoginType") == "GoogleLogin") {
       getMessage();
     } else {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Login()));
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (context) => Login()));
     }
   }
 
@@ -156,75 +156,196 @@ class _HomeState extends State<Home> {
 
   List emailList = [];
 
-  Future<void> getemailList() async {
+  // Future<void> getemailList() async {
+  //   SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+  //   var userDetail = json.decode(sharedPreferences.getString("UserDetail"));
+
+  //   // Enough Mail
+  //   printImapClientDebugLog();
+  //   ImapClient client = new ImapClient();
+  //   // await client.connect("imap.gmail.com", 993, true);
+  //   await client.connect("tastysoftcloud.com", 993, true);
+  //   print("success1");
+  //   await client.authenticate(new ImapPlainAuth(
+  //       // "${userDetail["EmailAddress"]}", "${userDetail["EmailPassword"]}"));
+  //       "hwy@tastysoftcloud.com", 'htetwaiyanI\$l1tt'));
+  //   ImapFolder inbox = await client.getFolder("inbox");
+
+  //   int emailListlength = 0;
+  //   if (inbox.mailCount >= 20) {
+  //     emailListlength = 20;
+  //   } else {
+  //     emailListlength = inbox.mailCount;
+  //   }
+  //   for (var i = 0; i < emailListlength; i++) {
+  //     Map<int, Map<String, dynamic>> subject = await inbox
+  //         .fetch(["BODY.PEEK[HEADER.FIELDS (SUBJECT)]"], messageIds: [i + 1]);
+  //     var mapSubjectEmail = subject[i + 1];
+  //     var mapEmail = mapSubjectEmail.values;
+  //     var subjectEmail = mapEmail.first;
+  //     var emailSubject1 = subjectEmail
+  //         .toString()
+  //         .substring(subjectEmail.toString().indexOf(": ") + 1);
+  //     var emailSubject2 = emailSubject1.replaceAll(" ", "");
+  //     var emailSubject = emailSubject2.replaceAll("\n", "");
+  //     Map<int, Map<String, dynamic>> from = await inbox
+  //         .fetch(["BODY.PEEK[HEADER.FIELDS (FROM)]"], messageIds: [i + 1]);
+  //     var mapFromEmail = from[i + 1];
+  //     var mapEmail1 = mapFromEmail.values;
+  //     var fromEmail1 = mapEmail1.first;
+  //     var fromEmail2 = fromEmail1.replaceAll(" ", "");
+  //     var fromEmail = fromEmail2.replaceAll("\n", "");
+  //     Map<int, Map<String, dynamic>> date = await inbox
+  //         .fetch(["BODY.PEEK[HEADER.FIELDS (Date)]"], messageIds: [i + 1]);
+  //     var mapDateEmail = date[i + 1];
+  //     var mapEmail2 = mapDateEmail.values;
+  //     var dateEmail1 = mapEmail2.first;
+  //     var dateEmail2 = dateEmail1.replaceAll(" ", "");
+  //     var dateEmail = dateEmail2.replaceAll("\n", "");
+  //     Map<int, Map<String, dynamic>> to = await inbox
+  //         .fetch(["BODY.PEEK[HEADER.FIELDS (To)]"], messageIds: [i + 1]);
+  //     var mapToEmail = to[i + 1];
+  //     var mapEmail3 = mapToEmail.values;
+  //     var toEmail1 = mapEmail3.first;
+  //     var toEmail2 = toEmail1.replaceAll(" ", "");
+  //     var toEmail = toEmail2.replaceAll("\n", "");
+
+  //     emailList.add({
+  //       "From":
+  //           "${fromEmail.toString().substring(fromEmail.toString().indexOf(": ") + 1)}",
+  //       "Subject": "$emailSubject",
+  //       "Date":
+  //           "${dateEmail.toString().substring(dateEmail.toString().indexOf(": ") + 1)}",
+  //       "To":
+  //           "${toEmail.toString().substring(toEmail.toString().indexOf(": ") + 1)}",
+  //     });
+
+  //     if (i + 1 == emailListlength) {
+  //       print(emailList.length);
+  //       print(emailList);
+
+  //       await client.logout();
+  //     }
+  //   }
+  // }
+
+  Future<void> imapExample() async {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
     var userDetail = json.decode(sharedPreferences.getString("UserDetail"));
 
-    // Enough Mail
-    printImapClientDebugLog();
-    ImapClient client = new ImapClient();
-    // await client.connect("imap.gmail.com", 993, true);
-    await client.connect("tastysoftcloud.com", 993, true);
-    print("success1");
-    await client.authenticate(new ImapPlainAuth(
-        // "${userDetail["EmailAddress"]}", "${userDetail["EmailPassword"]}"));
-        "hwy@tastysoftcloud.com", 'hwyI\$l1tt'));
-    ImapFolder inbox = await client.getFolder("inbox");
+    // String userName = 'hwy@tastysoftcloud.com';
+    // String password = 'htetwaiyanI\$l1tt';
+    // String hostServer = "tastysoftcloud.com";
+    String userName = "${userDetail["EmailAddress"]}";
+    String password = "${userDetail["EmailPassword"]}";
+    String hostServer = "${userDetail["HostServer"]}";
+    int imapServerPort = 993;
+    bool isImapServerSecure = true;
+    print("ImapExample");
+    final client = ImapClient(isLogEnabled: false);
+    await client
+        .connectToServer(hostServer, imapServerPort,
+            isSecure: isImapServerSecure)
+        .then((value) {
+      print("Connected Success");
+    }).catchError((error) {
+      print("Connect Fail => $error");
+    });
+    await client.login(userName, password).then((value) {
+      print("Login Success");
+    }).catchError((error) {
+      print("Login Error");
+    });
+    // final mailboxes = await client.listMailboxes();
+    // print('mailboxes: ${mailboxes.result}');
+    await client.selectInbox().then((value) {
+      print("select inbox success");
+    }).catchError((error) {
+      print("select inbox fail");
+    });
+    List<MimeMessage> subjectList = [];
+    await client
+        .fetchRecentMessages(
+            messageCount: 20, criteria: 'BODY.PEEK[HEADER.FIELDS (SUBJECT)]')
+        .then((fetchResult) {
+      print("fetchResult success");
+      subjectList = fetchResult.result.messages;
+    }).catchError((error) {
+      print("error ==> $error");
+    });
 
-    int emailListlength = 0;
-    if (inbox.mailCount >= 20) {
-      emailListlength = 20;
-    } else {
-      emailListlength = inbox.mailCount;
-    }
-    for (var i = 0; i < emailListlength; i++) {
-      Map<int, Map<String, dynamic>> subject = await inbox
-          .fetch(["BODY.PEEK[HEADER.FIELDS (SUBJECT)]"], messageIds: [i + 1]);
-      var mapSubjectEmail = subject[i + 1];
-      var mapEmail = mapSubjectEmail.values;
-      var subjectEmail = mapEmail.first;
-      var emailSubject1 = subjectEmail
-          .toString()
-          .substring(subjectEmail.toString().indexOf(": ") + 1);
-      var emailSubject2 = emailSubject1.replaceAll(" ", "");
-      var emailSubject = emailSubject2.replaceAll("\n", "");
-      Map<int, Map<String, dynamic>> from = await inbox
-          .fetch(["BODY.PEEK[HEADER.FIELDS (FROM)]"], messageIds: [i + 1]);
-      var mapFromEmail = from[i + 1];
-      var mapEmail1 = mapFromEmail.values;
-      var fromEmail1 = mapEmail1.first;
-      var fromEmail2 = fromEmail1.replaceAll(" ", "");
-      var fromEmail = fromEmail2.replaceAll("\n", "");
-      Map<int, Map<String, dynamic>> date = await inbox
-          .fetch(["BODY.PEEK[HEADER.FIELDS (Date)]"], messageIds: [i + 1]);
-      var mapDateEmail = date[i + 1];
-      var mapEmail2 = mapDateEmail.values;
-      var dateEmail1 = mapEmail2.first;
-      var dateEmail2 = dateEmail1.replaceAll(" ", "");
-      var dateEmail = dateEmail2.replaceAll("\n", "");
-      Map<int, Map<String, dynamic>> to = await inbox
-          .fetch(["BODY.PEEK[HEADER.FIELDS (To)]"], messageIds: [i + 1]);
-      var mapToEmail = to[i + 1];
-      var mapEmail3 = mapToEmail.values;
-      var toEmail1 = mapEmail3.first;
-      var toEmail2 = toEmail1.replaceAll(" ", "");
-      var toEmail = toEmail2.replaceAll("\n", "");
+    List<MimeMessage> fromList = [];
 
-      emailList.add({
-        "From":
-            "${fromEmail.toString().substring(fromEmail.toString().indexOf(": ") + 1)}",
-        "Subject": "$emailSubject",
-        "Date":
-            "${dateEmail.toString().substring(dateEmail.toString().indexOf(": ") + 1)}",
-        "To":
-            "${toEmail.toString().substring(toEmail.toString().indexOf(": ") + 1)}",
-      });
+    await client
+        .fetchRecentMessages(
+            messageCount: 20, criteria: 'BODY.PEEK[HEADER.FIELDS (FROM)]')
+        .then((fetchResult) {
+      print("fetchResult success");
+      fromList = fetchResult.result.messages;
+      // for(var i = 0; i < fromList.length; i++) {
+      //   print(fromList[i].from[0].personalName);
+      // }
+    }).catchError((error) {
+      print("error ==> $error");
+    });
 
-      if (i + 1 == emailListlength) {
-        print(emailList.length);
-        print(emailList);
+    await getemailList(subjectList, fromList);
+    await client.logout();
+  }
 
-        await client.logout();
+  Future<void> getemailList(
+      List<MimeMessage> subjectList, List<MimeMessage> fromList) async {
+    for (var i = 0; i < subjectList.length; i++) {
+      for (var j = 0; j < fromList.length; j++) {
+        if (subjectList[i].sequenceId == fromList[j].sequenceId) {
+          if (emailList.length == 0) {
+            if (subjectList[i].isTextPlainMessage()) {
+              emailList.add({
+                "From": fromList[j].from[0].personalName,
+                "Subject": subjectList[i].decodeSubject(),
+                "Date": "",
+                "To": ""
+              });
+            } else {
+              emailList.add({
+                "From": fromList[j].from[0].personalName,
+                "Subject": subjectList[i].decodeTextPlainPart(),
+                "Date": "",
+                "To": ""
+              });
+            }
+          } else {
+            if (emailList
+                    .where((element) =>
+                        element["From"] == fromList[j].from[0].personalName &&
+                        element["Subject"] == subjectList[i].decodeSubject())
+                    .toList()
+                    .length ==
+                0) {
+              if (subjectList[i].isTextPlainMessage()) {
+                emailList.add({
+                  "From": fromList[j].from[0].personalName,
+                  "Subject": subjectList[i].decodeSubject(),
+                  "Date": "",
+                  "To": ""
+                });
+              } else {
+                emailList.add({
+                  "From": fromList[j].from[0].personalName,
+                  "Subject": subjectList[i].decodeTextPlainPart(),
+                  "Date": "",
+                  "To": ""
+                });
+              }
+            }
+          }
+        }
+
+        if (j == fromList.length - 1) {
+          if (i == subjectList.length - 1) {
+            print(emailList);
+          }
+        }
       }
     }
   }
@@ -381,69 +502,69 @@ class _HomeState extends State<Home> {
     // await flutterTts.setSpeechRate(rate);
     // await flutterTts.setPitch(pitch);
     // _stop().then((value) async {
-      if (text != null) {
-        if (text.isNotEmpty) {
-          if (checkSpeech == true) {
-            setState(() {
-              lastSpeechWord = text;
-              lastWords = lastSpeechWord;
-            });
-          }
-          // await flutterTts.awaitSpeakCompletion(true);
-          checkSpeech = false;
-          if (isReadAll == true) {
-            
-            for (var a = 0; a < emailList.length; a++) {
-              String speechText =
-                  "${emailList[a]["Subject"]} from ${emailList[a]["From"]}";
+    if (text != null) {
+      if (text.isNotEmpty) {
+        if (checkSpeech == true) {
+          setState(() {
+            lastSpeechWord = text;
+            lastWords = lastSpeechWord;
+          });
+        }
+        // await flutterTts.awaitSpeakCompletion(true);
+        checkSpeech = false;
+        if (isReadAll == true) {
+          for (var a = 0; a < emailList.length; a++) {
+            String speechText =
+                "${emailList[a]["Subject"]} from ${emailList[a]["From"]}";
 
-              if (isStop == true) {
-              } else {
-                if (check == a) {
-                  if (a != 0) {
-                    speechFromUser = "";
-                  }
-                  await speak(speechText, speechFromUser, isReadAll)
-                      .then((value) {
-                    print("$speechText ========> $value");
-                    checkSpeech = true;
-                    
-                    setState(() {
-                      lastSpeechWord = speechText;
-                      lastWords = lastSpeechWord;
-                    });
-                  });
-
-                  String getsenderName = speechText.toString().substring(
-                      speechText.toString().lastIndexOf("from "),
-                      speechText.toString().length);
-                  String getSubject = speechText
-                      .toString()
-                      .substring(0, speechText.toString().lastIndexOf("from "));
-                  readEmail = {
-                    "From": getsenderName.replaceAll(" from ", ""),
-                    "Subject": getSubject
-                  };
+            if (isStop == true) {
+            } else {
+              if (check == a) {
+                if (a != 0) {
+                  speechFromUser = "";
                 }
+                await speak(speechText, speechFromUser, isReadAll)
+                    .then((value) {
+                  print("$speechText ========> $value");
+                  checkSpeech = true;
+
+                  setState(() {
+                    lastSpeechWord = speechText;
+                    lastWords = lastSpeechWord;
+                  });
+                });
+
+                String getsenderName = speechText.toString().substring(
+                    speechText.toString().lastIndexOf("From "),
+                    speechText.toString().length);
+                String getSubject = speechText
+                    .toString()
+                    .substring(0, speechText.toString().lastIndexOf("From "));
+                readEmail = {
+                  "From": getsenderName.replaceAll(" From ", ""),
+                  "Subject": getSubject
+                };
               }
             }
-          } else {
-            await speak(text, speechFromUser, isReadAll).whenComplete(() {
-              checkSpeech = true;
-              remainTextList.removeWhere((element) => element == text);
-            });
-
-            String getsenderName = text.toString().substring(
-                text.toString().lastIndexOf("from "), text.toString().length);
-            String getSubject =
-                text.toString().substring(0, text.toString().lastIndexOf(" from "));
-            readEmail = {
-              "From": getsenderName.replaceAll("from ", ""),
-              "Subject": getSubject
-            };
           }
+        } else {
+          await speak(text, speechFromUser, isReadAll).whenComplete(() {
+            checkSpeech = true;
+            remainTextList.removeWhere((element) => element == text);
+          });
+
+          String getsenderName = text.toString().substring(
+              text.toString().lastIndexOf("From "), text.toString().length);
+          String getSubject = text
+              .toString()
+              .substring(0, text.toString().lastIndexOf(" From "));
+          readEmail = {
+            "From": getsenderName.replaceAll("From ", ""),
+            "Subject": getSubject
+          };
         }
       }
+    }
     // });
   }
 
@@ -512,7 +633,7 @@ class _HomeState extends State<Home> {
             text.toLowerCase() == "read all email" ||
             text.toLowerCase() == "read all emails") {
           // check = 0;
-          print("The text is ==> " +text);
+          print("The text is ==> " + text);
           await _speak(text, "$text", true);
         } else {
           if (text.toLowerCase() == "read this" ||
@@ -558,7 +679,7 @@ class _HomeState extends State<Home> {
               if (indexNum != 0) {
                 _speak(
                     text,
-                    "${emailList[indexNum - 1]["Subject"]} from ${emailList[indexNum - 1]["From"]}",
+                    "${emailList[indexNum - 1]["Subject"]} From ${emailList[indexNum - 1]["From"]}",
                     false);
               }
             }
@@ -574,12 +695,12 @@ class _HomeState extends State<Home> {
                   emailList.length - 1) {
             _speak(
                 text,
-                "${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["Subject"]} from ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["From"]}",
+                "${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["Subject"]} From ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["From"]}",
                 false);
           } else {
             _speak(
                 text,
-                "${emailList[0]["Subject"]} from ${emailList[0]["From"]}",
+                "${emailList[0]["Subject"]} From ${emailList[0]["From"]}",
                 false);
           }
         }
@@ -991,12 +1112,12 @@ class _HomeState extends State<Home> {
                                                       0) {
                                                 _speak(
                                                     "",
-                                                    "${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) - 1]["Subject"]} from ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) - 1]["From"]}",
+                                                    "${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) - 1]["Subject"]} From ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) - 1]["From"]}",
                                                     false);
                                               } else {
                                                 _speak(
                                                     "",
-                                                    "${emailList[0]["Subject"]} from ${emailList[0]["From"]}",
+                                                    "${emailList[0]["Subject"]} From ${emailList[0]["From"]}",
                                                     false);
                                               }
                                             }
@@ -1041,7 +1162,7 @@ class _HomeState extends State<Home> {
                                           onTap: () {
                                             print("Right");
                                             if (emailList.length != 0) {
-                                              // print("jjjjjjjjjj=> " + readEmail.toString());
+                                              // print("jjjjjjjjjj=> " + lastReadMail.toString());
                                               if (readEmail != null &&
                                                   emailList.indexWhere((element) =>
                                                           element["From"] ==
@@ -1074,15 +1195,18 @@ class _HomeState extends State<Home> {
                                                 //         element["Subject"] ==
                                                 //             readEmail[
                                                 //                 "Subject"]));
+                                                // print(readEmail);
+                                                // print(emailList);
+                                                // print(emailList.indexWhere((element) => element["From"].toString() == readEmail["From"].toString() && element["Subject"].toString() == readEmail["Subject"].toString()));
                                                 // print("${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["Subject"]} from ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["From"]}");
                                                 _speak(
                                                     "",
-                                                    "${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["Subject"]} from ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["From"]}",
+                                                    "${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["Subject"]} From ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["From"]}",
                                                     false);
                                               } else {
                                                 _speak(
                                                     "",
-                                                    "${emailList[0]["Subject"]} from ${emailList[0]["From"]}",
+                                                    "${emailList[0]["Subject"]} From ${emailList[0]["From"]}",
                                                     false);
                                               }
                                             }
@@ -1132,7 +1256,7 @@ class _HomeState extends State<Home> {
               Align(
                 alignment: Alignment.bottomCenter,
                 child: Text(
-                  "Version 1.0.12",
+                  "Version 1.0.13",
                   style: TextStyle(color: Colors.grey[400], fontSize: 14),
                 ),
               )
