@@ -5,6 +5,7 @@ import 'package:neo_vision/GetMail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'Home.dart';
+import 'LoginWithOtherMail.dart';
 
 class Login extends StatefulWidget {
   @override
@@ -36,7 +37,7 @@ class _LoginState extends State<Login> {
                     ),
                     borderRadius: BorderRadius.circular(5)),
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(50),
                   child: Column(
                     children: <Widget>[
                       Icon(
@@ -48,163 +49,8 @@ class _LoginState extends State<Login> {
                         height: 10,
                       ),
                       Text(
-                        "Email Login",
+                        "Login",
                         style: TextStyle(color: Colors.white, fontSize: 20),
-                      ),
-                      SizedBox(
-                        height: 30,
-                      ),
-                      TextFormField(
-                        controller: emailAddressController,
-                        keyboardType: TextInputType.emailAddress,
-                        cursorColor: Colors.blue,
-                        style: TextStyle(color: Colors.blue),
-                        validator: (text) {
-                          if (text.isEmpty) {
-                            return "Enter your email";
-                          }
-                          return null;
-                        },
-                        decoration: InputDecoration(
-                          hintText: "Email",
-                          hintStyle: TextStyle(color: Colors.blue),
-                          fillColor: Colors.white,
-                          filled: true,
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white),
-                          ),
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        height: 30,
-                      ),
-                      TextFormField(
-                        controller: hostServerController,
-                        keyboardType: TextInputType.emailAddress,
-                        cursorColor: Colors.blue,
-                        style: TextStyle(color: Colors.blue),
-                        validator: (text) {
-                          if (text.isEmpty) {
-                            return "Enter your host server";
-                          }
-                          return null;
-                        },
-                        decoration: InputDecoration(
-                          hintText: "Host Server",
-                          hintStyle: TextStyle(color: Colors.blue),
-                          fillColor: Colors.white,
-                          filled: true,
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white),
-                          ),
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        height: 30,
-                      ),
-                      TextFormField(
-                        controller: emailPasswordController,
-                        keyboardType: TextInputType.text,
-                        cursorColor: Colors.blue,
-                        style: TextStyle(color: Colors.blue),
-                        obscureText: showPassword ? false : true,
-                        validator: (text) {
-                          if (text.isEmpty) {
-                            return "Enter your password";
-                          }
-                          return null;
-                        },
-                        decoration: InputDecoration(
-                          hintText: "Password",
-                          hintStyle: TextStyle(color: Colors.blue),
-                          fillColor: Colors.white,
-                          filled: true,
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white),
-                          ),
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        height: 10,
-                      ),
-                      Row(
-                        children: <Widget>[
-                          Theme(
-                            data:
-                                ThemeData(unselectedWidgetColor: Colors.white),
-                            child: Checkbox(
-                                value: showPassword,
-                                checkColor: Colors.white,
-                                onChanged: (value) {
-                                  setState(() {
-                                    showPassword = value;
-                                  });
-                                }),
-                          ),
-                          Text(
-                            showPassword ? "Hide Password" : "Show Password",
-                            style: TextStyle(color: Colors.white),
-                          )
-                        ],
-                      ),
-                      SizedBox(
-                        height: 20,
-                      ),
-                      GestureDetector(
-                        onTap: () async {
-                          final isValid = _form.currentState.validate();
-                          if (isValid) {
-                            SharedPreferences sharedPreferences =
-                                await SharedPreferences.getInstance();
-                            var userDetail = 
-                              {
-                                "EmailAddress":
-                                    "${emailAddressController.text}",
-                                "HostServer" : "${hostServerController.text}",
-                                "EmailPassword":
-                                    "${emailPasswordController.text}"
-                              }
-                            ;
-                            sharedPreferences.setString(
-                                "UserDetail", json.encode(userDetail));
-
-                            sharedPreferences.setString("LoginType", "ImapLogin");
-
-                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
-                          }
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                              color: Colors.blue,
-                              borderRadius: BorderRadius.circular(5)),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 50, vertical: 15),
-                            child: Text(
-                              "Login",
-                              style:
-                                  TextStyle(color: Colors.white, fontSize: 18),
-                            ),
-                          ),
-                        ),
                       ),
                       SizedBox(
                         height: 30,
@@ -217,15 +63,65 @@ class _LoginState extends State<Login> {
                             Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
                           });
                         },
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: <Widget>[
-                            Text(
-                              "Login with Google ",
-                              style: TextStyle(color: Colors.white, fontSize: 15),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.blue,
+                            borderRadius: BorderRadius.circular(5)
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 50, vertical: 15),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                Text(
+                                  "Google",
+                                  style: TextStyle(color: Colors.white, fontSize: 15),
+                                ),
+                                SizedBox(
+                                  width: 10,
+                                ),
+                                // Icon(Icons.mail_outline, color: Colors.white)
+                                Image.asset("assets/google.png", width: 20,)
+                              ],
                             ),
-                            Icon(Icons.mail_outline, color: Colors.white)
-                          ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 20,
+                      ),
+                      Text("Or", style: TextStyle(color: Colors.white, fontSize: 15)),
+                      SizedBox(
+                        height: 20,
+                      ),
+                      GestureDetector(
+                        onTap: () async {
+                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginWithOtherMail()));
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.blue,
+                            borderRadius: BorderRadius.circular(5)
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 50, vertical: 15),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                Text(
+                                  "Other",
+                                  style: TextStyle(color: Colors.white, fontSize: 15),
+                                ),
+                                SizedBox(
+                                  width: 10,
+                                ),
+                                Icon(Icons.mail_outline,
+                                 color: Colors.white)
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                       SizedBox(

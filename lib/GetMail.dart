@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_web_browser/flutter_web_browser.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/gmail/v1.dart' as gmail;
@@ -5,6 +7,7 @@ import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
 // import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SecureStorage {
   final storage = FlutterSecureStorage();
@@ -44,6 +47,7 @@ class GMail {
   final storage = SecureStorage();
   //Get Authenticated Http Client
   Future<http.Client> getHttpClient() async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
     //Get Credentials
     var credentials = await storage.getCredential();
     if (credentials.isEmpty) {
@@ -54,7 +58,54 @@ class GMail {
         // launch(url);
         await FlutterWebBrowser.openWebPage(url: "$url");
         // _handleSignIn(url);
+
+        List accountDetailList = [];
+
+        if (sharedPreferences.getString("AccountDetailList") == null ||
+            sharedPreferences.getString("AccountDetailList") == "") {
+          accountDetailList = [];
+        } else {
+          accountDetailList =
+              json.decode(sharedPreferences.getString("AccountDetailList"));
+        }
+
+        DateTime dateTime = DateTime.now();
+
+        var accountDetail = {
+          "EmailAddress": "$url",
+          "Password": "",
+          "HostServer": "",
+          "ImapServerPort": "",
+          "LastSignin": {
+            "Date" : dateTime,
+            "Year": dateTime.year,
+            "Month": dateTime.month,
+            "Day": dateTime.day,
+            "WeekDay": dateTime.weekday,
+            "Hour": dateTime.hour,
+            "Minute": dateTime.minute,
+            "Second": dateTime.second
+          },
+          "LoginType": "GoogleLogin"
+        };
+
+        if (accountDetailList
+                .where((element) => element["EmailAddress"] == url)
+                .toList()
+                .length ==
+            0) {
+          accountDetailList.add(accountDetail);
+        } else {
+                        accountDetailList
+                              .where((element) =>
+                                  element["EmailAddress"] ==
+                                  url)
+                              .toList()[0] = accountDetail;
+                      }
+        sharedPreferences.setString(
+            "AccountDetailList", json.encode(accountDetailList));
       });
+
       //Save Credentials
       await storage.saveCredentials(authClient.credentials.accessToken,
           authClient.credentials.refreshToken.toString());
@@ -72,7 +123,9 @@ class GMail {
   }
 
   Future<void> _handleSignIn(String url) async {
-    GoogleSignIn _googleSignIn = GoogleSignIn(clientId:"183670288267-k6flall0oent8uie5g5rjvs5povk9oi8.apps.googleusercontent.com");
+    GoogleSignIn _googleSignIn = GoogleSignIn(
+        clientId:
+            "183670288267-k6flall0oent8uie5g5rjvs5povk9oi8.apps.googleusercontent.com");
     try {
       GoogleSignInAccount user = await _googleSignIn.signIn();
 
@@ -93,15 +146,18 @@ class GMail {
     try {
       var mails = gmail.GmailApi(client);
       print('w');
+
       gmail.ListMessagesResponse fileList = await mails.users.messages
           .list("me", includeSpamTrash: false, maxResults: 15);
       print(fileList.toJson());
       var check = 0;
-      for(var i =0; i < fileList.messages.length; i++) {
-        if(check == i)
-        await mails.users.messages
-          .get("me", "${fileList.messages[i].id}", format: "full").then((res) {
+      for (var i = 0; i < fileList.messages.length; i++) {
+        if (check == i)
+          await mails.users.messages
+              .get("me", "${fileList.messages[i].id}", format: "full")
+              .then((res) {
             data.add(res);
+            // print("LabelId ==> ${i+1} ${res.labelIds}");
             check = check + 1;
           });
       }
@@ -116,6 +172,19 @@ class GMail {
     }
 
     return data;
+  }
+
+  Future<void> setSeen(id) async {
+    var client = await getHttpClient();
+    var mails = gmail.GmailApi(client);
+    gmail.ModifyMessageRequest mod = gmail.ModifyMessageRequest();
+    mod.removeLabelIds = ["UNREAD"];
+
+    await mails.users.messages.modify(mod, "me", "$id").then((value) {
+      print("success modify");
+    }).catchError((error) {
+      print("error modify $error");
+    });
   }
 
   Future<List<gmail.Thread>> getThread() async {

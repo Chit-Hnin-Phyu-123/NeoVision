@@ -30,6 +30,7 @@ class _ChooseVoiceState extends State<ChooseVoice> {
   List onchangedVoiceList = [];
 
   var chosenVoice;
+  bool openVoice = true;
 
   Future<void> getLocalList() async {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
@@ -74,6 +75,7 @@ class _ChooseVoiceState extends State<ChooseVoice> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
+        backgroundColor: Colors.white,
           appBar: AppBar(
             automaticallyImplyLeading: false,
             backgroundColor: Colors.blue[400],
@@ -92,9 +94,9 @@ class _ChooseVoiceState extends State<ChooseVoice> {
               child: Container(
                 decoration: BoxDecoration(
                     border: Border.all(color: Colors.white),
-                    borderRadius: BorderRadius.circular(5)),
+                    borderRadius: BorderRadius.circular(3)),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 25),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       isExpanded: true,
@@ -138,20 +140,24 @@ class _ChooseVoiceState extends State<ChooseVoice> {
                             SharedPreferences sharedPreferences =
                                 await SharedPreferences.getInstance();
 
-                            sharedPreferences.setString("ChooseVoice",
-                                json.encode(onchangedVoiceList[i]));
-                            setState(() {
-                              chosenVoice = onchangedVoiceList[i];
-                            });
+                            if (openVoice == true) {
+                              sharedPreferences.setString("ChooseVoice",
+                                  json.encode(onchangedVoiceList[i]));
+                              setState(() {
+                                chosenVoice = onchangedVoiceList[i];
+                              });
+                            }
                           },
                           child: Container(
                             decoration: BoxDecoration(
+                              color: chosenVoice.toString() ==
+                                            onchangedVoiceList[i].toString() ? Colors.blue[400] : Colors.blueGrey[50],
                                 border: Border.all(
                                     color: chosenVoice.toString() ==
                                             onchangedVoiceList[i].toString()
                                         ? Colors.blue
-                                        : Colors.grey),
-                                borderRadius: BorderRadius.circular(5)),
+                                        : Colors.blueGrey),
+                                borderRadius: BorderRadius.circular(3)),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                   vertical: 15, horizontal: 25),
@@ -159,25 +165,63 @@ class _ChooseVoiceState extends State<ChooseVoice> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: <Widget>[
-                                  Text(
-                                    "${onchangedVoiceList[i]["DisplayName"]}",
-                                    style: TextStyle(
-                                        fontSize: 16,
-                                        color: chosenVoice.toString() ==
-                                                onchangedVoiceList[i].toString()
-                                            ? Colors.blue
-                                            : Colors.black),
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: <Widget>[
+                                      Text(
+                                        "${onchangedVoiceList[i]["DisplayName"]}",
+                                        style: TextStyle(
+                                            fontSize: 17,
+                                            color: chosenVoice.toString() ==
+                                                    onchangedVoiceList[i].toString()
+                                                ? Colors.white
+                                                : Colors.black),
+                                      ),
+                                      SizedBox(height: 5),
+                                      Text(
+                                        "${onchangedVoiceList[i]["Locale"]} (${onchangedVoiceList[i]["Gender"]})",
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            color: chosenVoice.toString() ==
+                                                    onchangedVoiceList[i].toString()
+                                                ? Colors.white
+                                                : Colors.black54),
+                                      ),
+                                    ],
                                   ),
                                   if (chosenVoice.toString() ==
                                       onchangedVoiceList[i].toString())
-                                    GestureDetector(
-                                      onTap: () {
-                                        speak(onchangedVoiceList[i]);
-                                      },
-                                      child: Icon(
-                                        Icons.volume_up,
-                                        color: Colors.blue,
-                                      ),
+                                    Container(
+                                      child: openVoice == false
+                                          ? Container(
+                                              decoration: BoxDecoration(
+                                                  color: Colors.blue[400]),
+                                              width: 14,
+                                              height: 14,
+                                              child: Center(
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                backgroundColor: Colors.white,
+                                                strokeWidth: 2,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                        Color>(Colors.blue),
+                                              )),
+                                            )
+                                          : GestureDetector(
+                                              onTap: () {
+                                                speak(onchangedVoiceList[i]);
+                                                setState(() {
+                                                  openVoice = false;
+                                                });
+                                              },
+                                              child: Icon(
+                                                Icons.volume_up,
+                                                color: Colors.white,
+
+                                              ),
+                                            ),
                                     )
                                 ],
                               ),
@@ -221,12 +265,16 @@ class _ChooseVoiceState extends State<ChooseVoice> {
 
     final dir = await getApplicationDocumentsDirectory();
     DateTime dateTime = DateTime.now();
-    String newfileName = "${dateTime.year}${dateTime.month}${dateTime.day}${dateTime.hour}${dateTime.minute}${dateTime.second}${dateTime.millisecond}";
+    String newfileName =
+        "${dateTime.year}${dateTime.month}${dateTime.day}${dateTime.hour}${dateTime.minute}${dateTime.second}${dateTime.millisecond}";
     final file = new File('${dir.path}/$newfileName.mp3');
 
     file.writeAsBytesSync(bytes);
 
     file.exists().then((value) {
+      setState(() {
+        openVoice = true;
+      });
       AudioPlayer audioPlayer = AudioPlayer(mode: PlayerMode.LOW_LATENCY);
       AudioPlayer.logEnabled = true;
 
