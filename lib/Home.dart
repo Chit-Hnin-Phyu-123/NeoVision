@@ -1161,15 +1161,15 @@ class _HomeState extends State<Home> {
 
         if (text.toLowerCase() == "read new" ||
             text.toLowerCase() == "read new email" ||
-            text.toLowerCase() == "read new emails") {
+            text.toLowerCase() == "read new emails" ||
+            text.toLowerCase() == "read email" ||
+            text.toLowerCase() == "read emails") {
           print("The text is ==> " + text);
           await _speak(text, "$text", "readnew");
         }
         if (text.toLowerCase() == "read all" ||
             text.toLowerCase() == "read all email" ||
-            text.toLowerCase() == "read all emails" ||
-            text.toLowerCase() == "read email" ||
-            text.toLowerCase() == "read emails") {
+            text.toLowerCase() == "read all emails") {
           // check = 0;
           print("The text is ==> " + text);
           await _speak(text, "$text", "readall");
