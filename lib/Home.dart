@@ -643,6 +643,7 @@ class _HomeState extends State<Home> {
     // if (result == 1) setState(() => ttsState = TtsState.stopped);
     audioPlayer.stop();
     isStop = true;
+    readNext = true;
   }
 
   var readEmail;
@@ -1881,6 +1882,9 @@ class _HomeState extends State<Home> {
                                       currentVoiceCommand =
                                           currentVoiceCommand + 1;
                                     }
+                                    for (var a = 0; a < voiceCommandList.length; a++) {
+                                      voiceCommandList[a]["CurrentUse"] = false;
+                                    }
                                     _speak(
                                         "",
                                         "${voiceCommandList[currentVoiceCommand]["VoiceCommand"]}",
@@ -1978,26 +1982,27 @@ class _HomeState extends State<Home> {
                                           setState(() {
                                             changeBtnColor = "center";
                                           });
-                                          voiceCommandList[currentVoiceCommand]
-                                              ["CurrentUse"] = true;
-                                          for (var a = 0;
-                                              a < voiceCommandList.length;
-                                              a++) {
-                                            if (a != currentVoiceCommand) {
-                                              voiceCommandList[a]
-                                                  ["CurrentUse"] = false;
-                                            }
-                                          }
-
-                                          if(voiceCommandList[currentVoiceCommand]["VoiceCommand"] == userVoiceCommand && audioPlayer.state == AudioPlayerState.PLAYING) {
-                                            //
-                                            print("stop");
-                                          } else {
-                                            resultForRead(voiceCommandList[
-                                                  currentVoiceCommand]
-                                              ["VoiceCommand"]);
-                                          }
                                           
+                                          if (
+                                            // voiceCommandList[currentVoiceCommand]["VoiceCommand"] !=
+                                            //       userVoiceCommand && 
+                                                  voiceCommandList[currentVoiceCommand]["CurrentUse"] == false) {
+                                            voiceCommandList[currentVoiceCommand]["CurrentUse"] = true;
+                                            for (var a = 0;
+                                                a < voiceCommandList.length;
+                                                a++) {
+                                              if (a != currentVoiceCommand) {
+                                                voiceCommandList[a]
+                                                    ["CurrentUse"] = false;
+                                              }
+                                            }
+                                            resultForRead(voiceCommandList[
+                                                    currentVoiceCommand]
+                                                ["VoiceCommand"]);
+                                            
+                                          } else {
+                                            print("stop");
+                                          }
                                         },
                                         child: Container(
                                           width: MediaQuery.of(context)
