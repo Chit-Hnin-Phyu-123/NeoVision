@@ -30,7 +30,8 @@ dependencies:
   http: any
   path_provider: any
   xml: any
-  audioplayers: any
+  # audioplayers: any
+  audioplayers: ^0.14.2
   # imap_client: any
   # flutter_html: any
   enough_mail: any

@@ -36,8 +36,10 @@ class SecureStorage {
 //     '1096412623635-63s715t2qdkm129mh0f84kj5e2sr7luo.apps.googleusercontent.com';
 // const _clientSecret = 'HWuaPRpQ-8R93u4Q5kiCrgFC';
 const _clientId =
-    '183670288267-k6flall0oent8uie5g5rjvs5povk9oi8.apps.googleusercontent.com';
-const _clientSecret = 'XzRGZ5NTDhg4lvm9zikPahB2';
+    // '183670288267-k6flall0oent8uie5g5rjvs5povk9oi8.apps.googleusercontent.com';
+    "708883610263-eeh0jd9003oe0a6061epo991jpa9q55v.apps.googleusercontent.com";
+// const _clientSecret = 'XzRGZ5NTDhg4lvm9zikPahB2';
+const _clientSecret = 'vn5WqUAxmeG0O3LW1MzvCweW';
 const _scopes = [
   // gmail.GmailApi.gmailModifyScope,
   gmail.GmailApi.GmailModifyScope
