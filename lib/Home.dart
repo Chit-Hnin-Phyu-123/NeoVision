@@ -658,6 +658,8 @@ class _HomeState extends State<Home> {
 
   String changeBtnColor;
 
+  bool downloadAudioFile = false;
+
   void resultForRead(String text) {
     setState(() async {
       isStop = false;
@@ -1309,6 +1311,9 @@ class _HomeState extends State<Home> {
 
   Future<String> speak(String text, String textfromUser, isReadAll, id) async {
     print("The Text is ========> $text");
+    setState(() {
+      downloadAudioFile = true;
+    });
     String xmlLang;
     String xmlGender;
     String xmlName;
@@ -1362,6 +1367,10 @@ class _HomeState extends State<Home> {
 
     file.exists().then((value) {
       print(value);
+      readNext = true;
+      setState(() {
+        downloadAudioFile = false;
+      });
       if (text == "Welcome to Neo Vision") {
         //
         readNext = true;
@@ -1393,6 +1402,11 @@ class _HomeState extends State<Home> {
         }
       }).catchError((error) {
         print("error =======> $error");
+        readNext = true;
+      });
+    }).catchError((error) {
+      setState(() {
+        downloadAudioFile = false;
       });
     });
 
@@ -1628,7 +1642,7 @@ class _HomeState extends State<Home> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: <Widget>[
-                          loading
+                          loading || downloadAudioFile
                               ? Row(
                                   children: <Widget>[
                                     Container(
@@ -1975,7 +1989,7 @@ class _HomeState extends State<Home> {
                                             }
                                           }
 
-                                          if(voiceCommandList[currentVoiceCommand]["VoiceCommand"] == userVoiceCommand) {
+                                          if(voiceCommandList[currentVoiceCommand]["VoiceCommand"] == userVoiceCommand && audioPlayer.state == AudioPlayerState.PLAYING) {
                                             //
                                             print("stop");
                                           } else {
