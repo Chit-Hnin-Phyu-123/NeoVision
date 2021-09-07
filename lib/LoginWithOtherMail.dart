@@ -33,18 +33,13 @@ class _LoginWithOtherMailState extends State<LoginWithOtherMail> {
           child: Padding(
             padding: const EdgeInsets.all(10),
             child: Container(
-              // decoration: BoxDecoration(
-              //     border: Border.all(
-              //       color: Colors.white,
-              //     ),
-              //     borderRadius: BorderRadius.circular(5)),
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: <Widget>[
                     Icon(
                       Icons.person,
-                      color: Colors.white,
+                      color: Colors.blue,
                       size: 80,
                     ),
                     SizedBox(
@@ -52,7 +47,7 @@ class _LoginWithOtherMailState extends State<LoginWithOtherMail> {
                     ),
                     Text(
                       "Login",
-                      style: TextStyle(color: Colors.white, fontSize: 20),
+                      style: TextStyle(color: Colors.blue, fontSize: 20),
                     ),
                     SizedBox(
                       height: 30,
@@ -60,8 +55,8 @@ class _LoginWithOtherMailState extends State<LoginWithOtherMail> {
                     TextFormField(
                       controller: emailAddressController,
                       keyboardType: TextInputType.emailAddress,
-                      cursorColor: Colors.white,
-                      style: TextStyle(color: Colors.white),
+                      cursorColor: Colors.blue,
+                      style: TextStyle(color: Colors.blue),
                       validator: (text) {
                         if (text.isEmpty) {
                           return "Enter your email";
@@ -71,21 +66,21 @@ class _LoginWithOtherMailState extends State<LoginWithOtherMail> {
                       decoration: InputDecoration(
                         hintText: "example.com",
                         hintStyle:
-                            TextStyle(color: Colors.white.withOpacity(0.5)),
+                            TextStyle(color: Colors.blue.withOpacity(0.5)),
                         labelText: "Email",
                         labelStyle:
-                            TextStyle(color: Colors.white, fontSize: 18),
+                            TextStyle(color: Colors.blue, fontSize: 18),
                         enabledBorder: UnderlineInputBorder(
                           borderSide:
-                              BorderSide(color: Colors.white.withOpacity(0.5)),
+                              BorderSide(color: Colors.blue.withOpacity(0.5)),
                         ),
                         focusedBorder: UnderlineInputBorder(
                           borderSide:
-                              BorderSide(color: Colors.white.withOpacity(0.5)),
+                              BorderSide(color: Colors.blue.withOpacity(0.5)),
                         ),
                         border: UnderlineInputBorder(
                           borderSide:
-                              BorderSide(color: Colors.white.withOpacity(0.5)),
+                              BorderSide(color: Colors.blue.withOpacity(0.5)),
                         ),
                       ),
                     ),
@@ -95,8 +90,8 @@ class _LoginWithOtherMailState extends State<LoginWithOtherMail> {
                     TextFormField(
                       controller: hostServerController,
                       keyboardType: TextInputType.emailAddress,
-                      cursorColor: Colors.white,
-                      style: TextStyle(color: Colors.white),
+                      cursorColor: Colors.blue,
+                      style: TextStyle(color: Colors.blue),
                       validator: (text) {
                         if (text.isEmpty) {
                           return "Enter your host server";
@@ -106,21 +101,21 @@ class _LoginWithOtherMailState extends State<LoginWithOtherMail> {
                       decoration: InputDecoration(
                         labelText: "Host Server",
                         labelStyle:
-                            TextStyle(color: Colors.white, fontSize: 18),
+                            TextStyle(color: Colors.blue, fontSize: 18),
                         hintText: "tastysoftcloud.com",
                         hintStyle:
-                            TextStyle(color: Colors.white.withOpacity(0.5)),
+                            TextStyle(color: Colors.blue.withOpacity(0.5)),
                         enabledBorder: UnderlineInputBorder(
                           borderSide:
-                              BorderSide(color: Colors.white.withOpacity(0.5)),
+                              BorderSide(color: Colors.blue.withOpacity(0.5)),
                         ),
                         focusedBorder: UnderlineInputBorder(
                           borderSide:
-                              BorderSide(color: Colors.white.withOpacity(0.5)),
+                              BorderSide(color: Colors.blue.withOpacity(0.5)),
                         ),
                         border: UnderlineInputBorder(
                           borderSide:
-                              BorderSide(color: Colors.white.withOpacity(0.5)),
+                              BorderSide(color: Colors.blue.withOpacity(0.5)),
                         ),
                       ),
                     ),
@@ -130,8 +125,8 @@ class _LoginWithOtherMailState extends State<LoginWithOtherMail> {
                     TextFormField(
                       controller: imapServerPortController,
                       keyboardType: TextInputType.number,
-                      cursorColor: Colors.white,
-                      style: TextStyle(color: Colors.white),
+                      cursorColor: Colors.blue,
+                      style: TextStyle(color: Colors.blue),
                       validator: (text) {
                         if (text.isEmpty) {
                           return "Enter your Imap server Port";
@@ -141,21 +136,21 @@ class _LoginWithOtherMailState extends State<LoginWithOtherMail> {
                       decoration: InputDecoration(
                         labelText: "Imap Server Port",
                         labelStyle:
-                            TextStyle(color: Colors.white, fontSize: 18),
+                            TextStyle(color: Colors.blue, fontSize: 18),
                         hintText: "993",
                         hintStyle:
-                            TextStyle(color: Colors.white.withOpacity(0.5)),
+                            TextStyle(color: Colors.blue.withOpacity(0.5)),
                         enabledBorder: UnderlineInputBorder(
                           borderSide:
-                              BorderSide(color: Colors.white.withOpacity(0.5)),
+                              BorderSide(color: Colors.blue.withOpacity(0.5)),
                         ),
                         focusedBorder: UnderlineInputBorder(
                           borderSide:
-                              BorderSide(color: Colors.white.withOpacity(0.5)),
+                              BorderSide(color: Colors.blue.withOpacity(0.5)),
                         ),
                         border: UnderlineInputBorder(
                           borderSide:
-                              BorderSide(color: Colors.white.withOpacity(0.5)),
+                              BorderSide(color: Colors.blue.withOpacity(0.5)),
                         ),
                       ),
                     ),
@@ -165,8 +160,8 @@ class _LoginWithOtherMailState extends State<LoginWithOtherMail> {
                     TextFormField(
                       controller: emailPasswordController,
                       keyboardType: TextInputType.text,
-                      cursorColor: Colors.white,
-                      style: TextStyle(color: Colors.white),
+                      cursorColor: Colors.blue,
+                      style: TextStyle(color: Colors.blue),
                       obscureText: showPassword ? false : true,
                       validator: (text) {
                         if (text.isEmpty) {
@@ -177,21 +172,21 @@ class _LoginWithOtherMailState extends State<LoginWithOtherMail> {
                       decoration: InputDecoration(
                         labelText: "Password",
                         labelStyle:
-                            TextStyle(color: Colors.white, fontSize: 18),
+                            TextStyle(color: Colors.blue, fontSize: 18),
                         hintText: "password",
                         hintStyle:
-                            TextStyle(color: Colors.white.withOpacity(0.5)),
+                            TextStyle(color: Colors.blue.withOpacity(0.5)),
                         enabledBorder: UnderlineInputBorder(
                           borderSide:
-                              BorderSide(color: Colors.white.withOpacity(0.5)),
+                              BorderSide(color: Colors.blue.withOpacity(0.5)),
                         ),
                         focusedBorder: UnderlineInputBorder(
                           borderSide:
-                              BorderSide(color: Colors.white.withOpacity(0.5)),
+                              BorderSide(color: Colors.blue.withOpacity(0.5)),
                         ),
                         border: UnderlineInputBorder(
                           borderSide:
-                              BorderSide(color: Colors.white.withOpacity(0.5)),
+                              BorderSide(color: Colors.blue.withOpacity(0.5)),
                         ),
                       ),
                     ),
@@ -201,10 +196,10 @@ class _LoginWithOtherMailState extends State<LoginWithOtherMail> {
                     Row(
                       children: <Widget>[
                         Theme(
-                          data: ThemeData(unselectedWidgetColor: Colors.white),
+                          data: ThemeData(unselectedWidgetColor: Colors.blue),
                           child: Checkbox(
                               value: showPassword,
-                              checkColor: Colors.white,
+                              checkColor: Colors.blue,
                               onChanged: (value) {
                                 setState(() {
                                   showPassword = value;
@@ -213,7 +208,7 @@ class _LoginWithOtherMailState extends State<LoginWithOtherMail> {
                         ),
                         Text(
                           showPassword ? "Hide Password" : "Show Password",
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(color: Colors.blue),
                         )
                       ],
                     ),
@@ -380,16 +375,16 @@ class _LoginWithOtherMailState extends State<LoginWithOtherMail> {
         height: MediaQuery.of(context).size.height,
         child: Center(
             child: CircularProgressIndicator(
-          backgroundColor: Colors.blue,
+          backgroundColor: Colors.white,
           strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
         )),
       ),
     ]));
 
     return Scaffold(
       key: _scaffoldkey,
-      backgroundColor: Colors.blue[300],
+      // backgroundColor: Colors.blue[300],
       body: loading ? loadProgress : body,
     );
   }

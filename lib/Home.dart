@@ -649,6 +649,15 @@ class _HomeState extends State<Home> {
 
   String userVoiceCommand = "";
 
+  List voiceCommandList = [
+    {"VoiceCommand": "check emails", "CurrentUse": false},
+    {"VoiceCommand": "read emails", "CurrentUse": false}
+  ];
+
+  int currentVoiceCommand;
+
+  String changeBtnColor;
+
   void resultForRead(String text) {
     setState(() async {
       isStop = false;
@@ -668,6 +677,8 @@ class _HomeState extends State<Home> {
           text.toLowerCase().startsWith("check new emails") ||
           text.toLowerCase().startsWith("read new") ||
           text.toLowerCase().startsWith("read all") ||
+          text.toLowerCase().startsWith("read email") ||
+          text.toLowerCase().startsWith("read emails") ||
           text.toLowerCase().startsWith("read all email") ||
           text.toLowerCase().startsWith("read all emails") ||
           text.toLowerCase().startsWith("read new email") ||
@@ -856,16 +867,17 @@ class _HomeState extends State<Home> {
             if (k > accountDetailList.length) {
               //
             } else {
-              if (accountDetailList[k-1]["LoginType"] == "ImapLogin") {
+              if (accountDetailList[k - 1]["LoginType"] == "ImapLogin") {
                 setState(() {
                   loading = true;
                 });
 
                 var userDetail = {
-                  "EmailAddress": "${accountDetailList[k-1]["EmailAddress"]}",
-                  "HostServer": "${accountDetailList[k-1]["Password"]}",
-                  "ImapServerPort": accountDetailList[k-1]["HostServer"],
-                  "EmailPassword": "${accountDetailList[k-1]["ImapServerPort"]}"
+                  "EmailAddress": "${accountDetailList[k - 1]["EmailAddress"]}",
+                  "HostServer": "${accountDetailList[k - 1]["Password"]}",
+                  "ImapServerPort": accountDetailList[k - 1]["HostServer"],
+                  "EmailPassword":
+                      "${accountDetailList[k - 1]["ImapServerPort"]}"
                 };
                 sharedPreferences.setString(
                     "UserDetail", json.encode(userDetail));
@@ -963,7 +975,8 @@ class _HomeState extends State<Home> {
                   });
                   _speak(text, "Login fail!", "false");
                 });
-              } else if (accountDetailList[k-1]["LoginType"] == "GoogleLogin") {
+              } else if (accountDetailList[k - 1]["LoginType"] ==
+                  "GoogleLogin") {
                 setState(() {
                   loading = true;
                 });
@@ -1128,8 +1141,8 @@ class _HomeState extends State<Home> {
             text.toLowerCase() == "check my email" ||
             text.toLowerCase() == "check my emails") {
           if (unseenEmailList.length == 0 || unseenEmailList.length == 1) {
-            _speak(text, "There are ${unseenEmailList.length} New Email.",
-                "false");
+            _speak(
+                text, "There is ${unseenEmailList.length} New Email.", "false");
           } else {
             _speak(text, "There are ${unseenEmailList.length} New Emails.",
                 "false");
@@ -1154,7 +1167,9 @@ class _HomeState extends State<Home> {
         }
         if (text.toLowerCase() == "read all" ||
             text.toLowerCase() == "read all email" ||
-            text.toLowerCase() == "read all emails") {
+            text.toLowerCase() == "read all emails" ||
+            text.toLowerCase() == "read email" ||
+            text.toLowerCase() == "read emails") {
           // check = 0;
           print("The text is ==> " + text);
           await _speak(text, "$text", "readall");
@@ -1829,11 +1844,33 @@ class _HomeState extends State<Home> {
                             mainAxisAlignment: MainAxisAlignment.start,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
-                              GestureDetector(
+                              InkWell(
+                                splashColor: Colors.blue[100],
+                                highlightColor: Colors.transparent,
+                                radius: 50,
                                 onTap: () {
-                                  print("Top");
+                                  // print("Top");
+                                  // if (readNext == true) {
+                                  //   _speak("", "$userVoiceCommand", "false");
+                                  // }
+                                  _stop();
                                   if (readNext == true) {
-                                    _speak("", "$userVoiceCommand", "false");
+                                    setState(() {
+                                      changeBtnColor = "top";
+                                    });
+                                    if (currentVoiceCommand == null) {
+                                      currentVoiceCommand = 0;
+                                    } else if (currentVoiceCommand ==
+                                        voiceCommandList.length - 1) {
+                                      currentVoiceCommand = 0;
+                                    } else {
+                                      currentVoiceCommand =
+                                          currentVoiceCommand + 1;
+                                    }
+                                    _speak(
+                                        "",
+                                        "${voiceCommandList[currentVoiceCommand]["VoiceCommand"]}",
+                                        "false");
                                   }
                                 },
                                 child: Container(
@@ -1842,7 +1879,9 @@ class _HomeState extends State<Home> {
                                       alignment: Alignment.bottomCenter,
                                       child: Icon(
                                         Icons.arrow_drop_up,
-                                        color: Colors.grey,
+                                        color: changeBtnColor == "top"
+                                            ? Colors.blue[200]
+                                            : Colors.grey,
                                         size: 120,
                                       )),
                                 ),
@@ -1856,35 +1895,45 @@ class _HomeState extends State<Home> {
                                         CrossAxisAlignment.center,
                                     children: <Widget>[
                                       Expanded(
-                                        child: GestureDetector(
+                                        child: InkWell(
+                                          splashColor: Colors.blue[100],
+                                          highlightColor: Colors.transparent,
+                                          radius: 50,
                                           onTap: () {
                                             print("Left");
-                                            if (readNext == true) {
-                                              if (emailList.length == 0) {
-                                                _speak("", "There is no email.",
-                                                    "false");
-                                              } else {
-                                                if (readEmail != null &&
-                                                    emailList.indexWhere((element) =>
-                                                            element["From"] ==
-                                                                readEmail[
-                                                                    "From"] &&
-                                                            element["Subject"] ==
-                                                                readEmail[
-                                                                    "Subject"]) !=
-                                                        0) {
+                                            _stop().then((value) {
+                                              setState(() {
+                                                changeBtnColor = "left";
+                                              });
+                                              if (readNext == true) {
+                                                if (emailList.length == 0) {
                                                   _speak(
                                                       "",
-                                                      "${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) - 1]["Subject"]} From ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) - 1]["From"]}",
+                                                      "There is no email.",
                                                       "false");
                                                 } else {
-                                                  _speak(
-                                                      "",
-                                                      "${emailList[0]["Subject"]} From ${emailList[0]["From"]}",
-                                                      "false");
+                                                  if (readEmail != null &&
+                                                      emailList.indexWhere((element) =>
+                                                              element["From"] ==
+                                                                  readEmail[
+                                                                      "From"] &&
+                                                              element["Subject"] ==
+                                                                  readEmail[
+                                                                      "Subject"]) !=
+                                                          0) {
+                                                    _speak(
+                                                        "",
+                                                        "${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) - 1]["Subject"]} From ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) - 1]["From"]}",
+                                                        "false");
+                                                  } else {
+                                                    _speak(
+                                                        "",
+                                                        "${emailList[0]["Subject"]} From ${emailList[0]["From"]}",
+                                                        "false");
+                                                  }
                                                 }
                                               }
-                                            }
+                                            });
                                           },
                                           child: Container(
                                             child: Align(
@@ -1892,19 +1941,49 @@ class _HomeState extends State<Home> {
                                                     Alignment.centerRight,
                                                 child: Icon(
                                                   Icons.arrow_left,
-                                                  color: Colors.grey,
+                                                  color:
+                                                      changeBtnColor == "left"
+                                                          ? Colors.blue[200]
+                                                          : Colors.grey,
                                                   size: 120,
                                                 )),
                                           ),
                                         ),
                                       ),
-                                      GestureDetector(
+                                      InkWell(
                                         onLongPress: () async {
-                                          print("Center onlongpress");
-                                        },
-                                        onTap: () {
+                                          setState(() {
+                                            changeBtnColor = "center";
+                                          });
                                           _stop();
                                           startListening();
+                                        },
+                                        onTap: () {
+                                          // center button
+                                          _stop();
+                                          setState(() {
+                                            changeBtnColor = "center";
+                                          });
+                                          voiceCommandList[currentVoiceCommand]
+                                              ["CurrentUse"] = true;
+                                          for (var a = 0;
+                                              a < voiceCommandList.length;
+                                              a++) {
+                                            if (a != currentVoiceCommand) {
+                                              voiceCommandList[a]
+                                                  ["CurrentUse"] = false;
+                                            }
+                                          }
+
+                                          if(voiceCommandList[currentVoiceCommand]["VoiceCommand"] == userVoiceCommand) {
+                                            //
+                                            print("stop");
+                                          } else {
+                                            resultForRead(voiceCommandList[
+                                                  currentVoiceCommand]
+                                              ["VoiceCommand"]);
+                                          }
+                                          
                                         },
                                         child: Container(
                                           width: MediaQuery.of(context)
@@ -1914,7 +1993,10 @@ class _HomeState extends State<Home> {
                                           child: Center(
                                               child: Container(
                                             decoration: BoxDecoration(
-                                                color: Colors.grey[200],
+                                                color:
+                                                    changeBtnColor == "center"
+                                                        ? Colors.blue[100]
+                                                        : Colors.grey[200],
                                                 shape: BoxShape.circle,
                                                 border: Border.all(
                                                     color: Colors.white)),
@@ -1922,70 +2004,84 @@ class _HomeState extends State<Home> {
                                         ),
                                       ),
                                       Expanded(
-                                        child: GestureDetector(
+                                        child: InkWell(
+                                          splashColor: Colors.blue[100],
+                                          highlightColor: Colors.transparent,
+                                          radius: 50,
                                           onTap: () {
-                                            print("Right");
-                                            if (readNext == true) {
-                                              if (emailList.length == 0) {
-                                                _speak("", "There is no email.",
-                                                    "false");
-                                              } else {
-                                                // print("jjjjjjjjjj=> " + lastReadMail.toString());
-                                                if (readEmail != null &&
-                                                    emailList.indexWhere((element) =>
-                                                            element["From"] ==
-                                                                readEmail[
-                                                                    "From"] &&
-                                                            element["Subject"] ==
-                                                                readEmail[
-                                                                    "Subject"]) !=
-                                                        emailList.length - 1) {
-                                                  // for(var aa = 0; aa< readEmail["Subject"].toString().length; aa++) {
-                                                  //   print("aa => ${readEmail["Subject"].toString()[aa]}");
-                                                  // }
-
-                                                  // for(var aa = 0; aa< emailList[0]["Subject"].toString().length; aa++) {
-                                                  //   print("bb => ${emailList[0]["Subject"].toString()[aa]}");
-                                                  // }
-                                                  // print("kk=>${readEmail["Subject"]} kk");
-                                                  // print("ll=>${emailList[0]["Subject"]} ll");
-                                                  // if(readEmail["Subject"] == emailList[0]["Subject"]) {
-                                                  //   print("ok");
-                                                  // }
-                                                  // print(
-                                                  //     emailList.where(
-                                                  //         (element) =>
-                                                  //             element["From"].toString() == readEmail["From"].toString() && element["Subject"].toString() == readEmail["Subject"].toString()));
-                                                  // print(emailList.indexWhere(
-                                                  //     (element) =>
-                                                  //         element["From"] ==
-                                                  //             readEmail["From"] &&
-                                                  //         element["Subject"] ==
-                                                  //             readEmail[
-                                                  //                 "Subject"]));
-                                                  // print(readEmail);
-                                                  // print(emailList);
-                                                  // print(emailList.indexWhere((element) => element["From"].toString() == readEmail["From"].toString() && element["Subject"].toString() == readEmail["Subject"].toString()));
-                                                  // print("${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["Subject"]} from ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["From"]}");
+                                            _stop().then((value) {
+                                              print("Right");
+                                              setState(() {
+                                                changeBtnColor = "right";
+                                              });
+                                              if (readNext == true) {
+                                                if (emailList.length == 0) {
                                                   _speak(
                                                       "",
-                                                      "${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["Subject"]} From ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["From"]}",
+                                                      "There is no email.",
                                                       "false");
                                                 } else {
-                                                  _speak(
-                                                      "",
-                                                      "${emailList[0]["Subject"]} From ${emailList[0]["From"]}",
-                                                      "false");
+                                                  // print("jjjjjjjjjj=> " + lastReadMail.toString());
+                                                  if (readEmail != null &&
+                                                      emailList.indexWhere((element) =>
+                                                              element["From"] ==
+                                                                  readEmail[
+                                                                      "From"] &&
+                                                              element["Subject"] ==
+                                                                  readEmail[
+                                                                      "Subject"]) !=
+                                                          emailList.length -
+                                                              1) {
+                                                    // for(var aa = 0; aa< readEmail["Subject"].toString().length; aa++) {
+                                                    //   print("aa => ${readEmail["Subject"].toString()[aa]}");
+                                                    // }
+
+                                                    // for(var aa = 0; aa< emailList[0]["Subject"].toString().length; aa++) {
+                                                    //   print("bb => ${emailList[0]["Subject"].toString()[aa]}");
+                                                    // }
+                                                    // print("kk=>${readEmail["Subject"]} kk");
+                                                    // print("ll=>${emailList[0]["Subject"]} ll");
+                                                    // if(readEmail["Subject"] == emailList[0]["Subject"]) {
+                                                    //   print("ok");
+                                                    // }
+                                                    // print(
+                                                    //     emailList.where(
+                                                    //         (element) =>
+                                                    //             element["From"].toString() == readEmail["From"].toString() && element["Subject"].toString() == readEmail["Subject"].toString()));
+                                                    // print(emailList.indexWhere(
+                                                    //     (element) =>
+                                                    //         element["From"] ==
+                                                    //             readEmail["From"] &&
+                                                    //         element["Subject"] ==
+                                                    //             readEmail[
+                                                    //                 "Subject"]));
+                                                    // print(readEmail);
+                                                    // print(emailList);
+                                                    // print(emailList.indexWhere((element) => element["From"].toString() == readEmail["From"].toString() && element["Subject"].toString() == readEmail["Subject"].toString()));
+                                                    // print("${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["Subject"]} from ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["From"]}");
+                                                    _speak(
+                                                        "",
+                                                        "${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["Subject"]} From ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["From"]}",
+                                                        "false");
+                                                  } else {
+                                                    _speak(
+                                                        "",
+                                                        "${emailList[0]["Subject"]} From ${emailList[0]["From"]}",
+                                                        "false");
+                                                  }
                                                 }
                                               }
-                                            }
+                                            });
                                           },
                                           child: Container(
                                             child: Align(
                                                 alignment: Alignment.centerLeft,
                                                 child: Icon(
                                                   Icons.arrow_right,
-                                                  color: Colors.grey,
+                                                  color:
+                                                      changeBtnColor == "right"
+                                                          ? Colors.blue[200]
+                                                          : Colors.grey,
                                                   size: 120,
                                                 )),
                                           ),
@@ -1995,10 +2091,16 @@ class _HomeState extends State<Home> {
                                   ),
                                 ),
                               ),
-                              GestureDetector(
+                              InkWell(
+                                splashColor: Colors.blue[100],
+                                highlightColor: Colors.transparent,
+                                radius: 50,
                                 onTap: () {
                                   print("Bottom");
                                   // _stop();
+                                  setState(() {
+                                    changeBtnColor = "bottom";
+                                  });
                                   if (readNext == true) {
                                     if (lastSpeechWord.length != 0) {
                                       _speak("", lastSpeechWord, "false");
@@ -2011,7 +2113,9 @@ class _HomeState extends State<Home> {
                                       alignment: Alignment.topCenter,
                                       child: Icon(
                                         Icons.arrow_drop_down,
-                                        color: Colors.grey,
+                                        color: changeBtnColor == "bottom"
+                                            ? Colors.blue[200]
+                                            : Colors.grey,
                                         size: 120,
                                       )),
                                 ),

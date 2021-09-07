@@ -23,7 +23,7 @@ class _LoginState extends State<Login> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue[300],
+      // backgroundColor: Colors.blue[300],
       body: Form(
         key: _form,
         child: Center(
@@ -33,7 +33,7 @@ class _LoginState extends State<Login> {
               child: Container(
                 decoration: BoxDecoration(
                     border: Border.all(
-                      color: Colors.white,
+                      color: Colors.blue[300],
                     ),
                     borderRadius: BorderRadius.circular(5)),
                 child: Padding(
@@ -42,7 +42,7 @@ class _LoginState extends State<Login> {
                     children: <Widget>[
                       Icon(
                         Icons.person,
-                        color: Colors.white,
+                        color: Colors.blue[300],
                         size: 80,
                       ),
                       SizedBox(
@@ -50,7 +50,7 @@ class _LoginState extends State<Login> {
                       ),
                       Text(
                         "Login",
-                        style: TextStyle(color: Colors.white, fontSize: 20),
+                        style: TextStyle(color: Colors.blue[300], fontSize: 20),
                       ),
                       SizedBox(
                         height: 30,
@@ -65,7 +65,7 @@ class _LoginState extends State<Login> {
                         },
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.blue,
+                            color: Colors.blue[300],
                             borderRadius: BorderRadius.circular(5)
                           ),
                           child: Padding(
@@ -91,7 +91,7 @@ class _LoginState extends State<Login> {
                       SizedBox(
                         height: 20,
                       ),
-                      Text("Or", style: TextStyle(color: Colors.white, fontSize: 15)),
+                      Text("Or", style: TextStyle(color: Colors.blue[300], fontSize: 15)),
                       SizedBox(
                         height: 20,
                       ),
@@ -101,7 +101,7 @@ class _LoginState extends State<Login> {
                         },
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.blue,
+                            color: Colors.blue[300],
                             borderRadius: BorderRadius.circular(5)
                           ),
                           child: Padding(
