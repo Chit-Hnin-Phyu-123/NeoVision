@@ -114,46 +114,64 @@ class _HomeState extends State<Home> {
         if (message.labelIds.contains("UNREAD")) {
           unseenEmailList.add(message.id);
         }
-        var emailbody =
-            utf8.decode(base64.decode(message.payload.parts[0].body.data));
-        message.payload.headers.forEach((header) {
-          if (header.name == "From" || header.value == "from") {
-            var name = header.value.substring(0, header.value.indexOf('<'));
-            var res = name.replaceAll('"', "");
-            if (emailbody.indexOf("<https:") < 0) {
-              emailbody = emailbody.replaceAll("==", "");
-              emailList.add({
-                "Id": "${message.id}",
-                "From": "$res",
-                "Subject": "$emailbody",
-                "Date": "",
-                "To": ""
-              });
-            } else {
-              List httpList = emailbody.split("<htt");
-              String realEmailBody = emailbody;
-              httpList.forEach((element) {
-                if (element.indexOf("ps://") < 0) {
-                  //
-                } else {
-                  var httpValue = element.substring(
-                      element.indexOf("ps://"), (element.indexOf(">") + 1));
-                  realEmailBody = realEmailBody.replaceAll(httpValue, "");
-                  realEmailBody = realEmailBody.replaceAll("<htt", "");
-                }
-              });
-              realEmailBody = realEmailBody.replaceAll("==", "");
-              // this.list.add(GmailMoel("$res", "$realEmailBody"));
-              emailList.add({
-                "Id": "${message.id}",
-                "From": "$res",
-                "Subject": "$realEmailBody",
-                "Date": "",
-                "To": ""
-              });
-            }
+        if (message.payload == null) {
+          //
+        } else {
+          // if(message.payload.parts.length == 0) {
+          //   //
+          // } else {
+          //   var emailbody = utf8.decode(base64.decode(message.payload.parts[0].body.data));
+          // }
+
+          var emailsubject = message.snippet;
+          if (message.payload.headers.length != 0) {
+            message.payload.headers.forEach((header) {
+              if (header.name == "From" || header.value == "from") {
+                var name = header.value.substring(0, header.value.indexOf('<'));
+                var res = name.replaceAll('"', "");
+                emailList.add({
+                  "Id": "${message.id}",
+                  "From": "$res",
+                  "Subject": "$emailsubject",
+                  "Date": "",
+                  "To": ""
+                });
+                // if (emailbody.indexOf("<https:") < 0) {
+                //   emailbody = emailbody.replaceAll("==", "");
+                //   emailList.add({
+                //     "Id": "${message.id}",
+                //     "From": "$res",
+                //     "Subject": "$emailsubject",
+                //     "Date": "",
+                //     "To": ""
+                //   });
+                // } else {
+                //   List httpList = emailbody.split("<htt");
+                //   String realEmailBody = emailbody;
+                //   httpList.forEach((element) {
+                //     if (element.indexOf("ps://") < 0) {
+                //       //
+                //     } else {
+                //       var httpValue = element.substring(
+                //           element.indexOf("ps://"), (element.indexOf(">") + 1));
+                //       realEmailBody = realEmailBody.replaceAll(httpValue, "");
+                //       realEmailBody = realEmailBody.replaceAll("<htt", "");
+                //     }
+                //   });
+                //   realEmailBody = realEmailBody.replaceAll("==", "");
+                //   // this.list.add(GmailMoel("$res", "$realEmailBody"));
+                //   emailList.add({
+                //     "Id": "${message.id}",
+                //     "From": "$res",
+                //     "Subject": "$realEmailBody",
+                //     "Date": "",
+                //     "To": ""
+                //   });
+                // }
+              }
+            });
           }
-        });
+        }
       });
     });
     setState(() {
@@ -502,7 +520,7 @@ class _HomeState extends State<Home> {
                 speechFromUser = "";
               }
               await speakAll(
-                      speechText, speechFromUser, isReadAll, emailList[a]["Id"])
+                      speechText, speechFromUser, emailList[a]["Id"], emailList)
                   .then((value) {
                 print("$speechText ========> $value");
                 checkSpeech = true;
@@ -539,40 +557,45 @@ class _HomeState extends State<Home> {
               if (a == emailList.length - 1) {
                 if (b == unseenEmailList.length - 1) {
                   // print(unreadList);
-                  for (var c = 0; c < unreadList.length; c++) {
-                    String speechText =
-                        "${unreadList[c]["Subject"]} From ${unreadList[c]["From"]}";
+                  // for (var c = 0; c < unreadList.length; c++) {
+                  String speechText =
+                      "${unreadList[check]["Subject"]} From ${unreadList[check]["From"]}";
 
-                    if (isStop == true) {
-                    } else {
-                      if (check == c) {
-                        if (c != 0) {
-                          speechFromUser = "";
-                        }
-                        await speakAll(speechText, speechFromUser, isReadAll,
-                                unreadList[c]["Id"])
-                            .then((value) {
-                          print("$speechText ========> $value");
-                          checkSpeech = true;
+                  if (isStop == true) {
+                  } else {
+                    // if (a.toString() == "0") {
+                    //   check = 0;
+                    //   valueCheck = 0;
+                    // } else {
+                    //   speechFromUser = "";
+                    // }
+                    // print("One =============> $c == $check");
+                    // if (c == check) {
+                    //   print("Two ==> $c == $check");
+                    await speakAll(speechText, speechFromUser,
+                            unreadList[check]["Id"], unreadList)
+                        .then((value) {
+                      print("$speechText ========> $value");
+                      checkSpeech = true;
 
-                          setState(() {
-                            lastSpeechWord = speechText;
-                            lastWords = lastSpeechWord;
-                          });
-                        });
+                      setState(() {
+                        lastSpeechWord = speechText;
+                        lastWords = lastSpeechWord;
+                      });
+                    });
 
-                        String getsenderName = speechText.toString().substring(
-                            speechText.toString().lastIndexOf("From "),
-                            speechText.toString().length);
-                        String getSubject = speechText.toString().substring(
-                            0, speechText.toString().lastIndexOf("From "));
-                        readEmail = {
-                          "From": getsenderName.replaceAll(" From ", ""),
-                          "Subject": getSubject
-                        };
-                      }
-                    }
+                    String getsenderName = speechText.toString().substring(
+                        speechText.toString().lastIndexOf("From "),
+                        speechText.toString().length);
+                    String getSubject = speechText.toString().substring(
+                        0, speechText.toString().lastIndexOf("From "));
+                    readEmail = {
+                      "From": getsenderName.replaceAll(" From ", ""),
+                      "Subject": getSubject
+                    };
+                    // }
                   }
+                  // }
                 }
               }
             }
@@ -1415,8 +1438,11 @@ class _HomeState extends State<Home> {
   }
 
   Future<String> speakAll(
-      String text, String textfromUser, isReadAll, id) async {
+      String text, String textfromUser, id, List emailList) async {
     print("The Text is ========> $text");
+    setState(() {
+      downloadAudioFile = true;
+    });
     String xmlLang;
     String xmlGender;
     String xmlName;
@@ -1446,68 +1472,87 @@ class _HomeState extends State<Home> {
 
     String body = builder.build().toXmlString();
 
-    if (check == valueCheck) {
-      String url =
-          "https://eastasia.tts.speech.microsoft.com/cognitiveservices/v1";
-      Map<String, String> headers = {
-        'Authorization': 'Bearer ' + await _getAccessToken(),
-        'cache-control': 'no-cache',
-        'User-Agent': 'TTSPackage',
-        'X-Microsoft-OutputFormat': 'riff-24khz-16bit-mono-pcm',
-        'Content-Type': 'application/ssml+xml'
+    String url =
+        "https://eastasia.tts.speech.microsoft.com/cognitiveservices/v1";
+    Map<String, String> headers = {
+      'Authorization': 'Bearer ' + await _getAccessToken(),
+      'cache-control': 'no-cache',
+      'User-Agent': 'TTSPackage',
+      'X-Microsoft-OutputFormat': 'riff-24khz-16bit-mono-pcm',
+      'Content-Type': 'application/ssml+xml'
+    };
+
+    http.Response request = await http.post(url, headers: headers, body: body);
+
+    Uint8List bytes = request.bodyBytes;
+
+    final dir = await getApplicationDocumentsDirectory();
+    DateTime dateTime = DateTime.now();
+    String newfileName =
+        "${dateTime.year}${dateTime.month}${dateTime.day}${dateTime.hour}${dateTime.minute}${dateTime.second}${dateTime.millisecond}";
+    final file = new File('${dir.path}/$newfileName.mp3');
+
+    file.writeAsBytesSync(bytes);
+
+    file.exists().then((value) async {
+      setState(() {
+        downloadAudioFile = false;
+      });
+      readEmail = {
+        "From": emailList[check]["From"],
+        "Subject": emailList[check]["Subject"]
       };
-
-      http.Response request =
-          await http.post(url, headers: headers, body: body);
-
-      Uint8List bytes = request.bodyBytes;
-
-      final dir = await getApplicationDocumentsDirectory();
-      DateTime dateTime = DateTime.now();
-      String newfileName =
-          "${dateTime.year}${dateTime.month}${dateTime.day}${dateTime.hour}${dateTime.minute}${dateTime.second}${dateTime.millisecond}";
-      final file = new File('${dir.path}/$newfileName.mp3');
-
-      file.writeAsBytesSync(bytes);
-
-      file.exists().then((value) async {
-        print(value);
-        if (text == "Welcome to Neo Vision") {
-          //
-          readNext = true;
-        } else {
-          setState(() {
+      if (text == "Welcome to Neo Vision") {
+        //
+        readNext = true;
+      } else {
+        setState(() {
+          if (check == 0) {
             speechList.add({"fromApp": "$text", "fromUser": "$textfromUser"});
-            if (controller.hasClients == true) {
-              controller.animateTo(
-                0.0,
-                curve: Curves.easeOut,
-                duration: const Duration(milliseconds: 300),
-              );
-            }
-          });
-        }
+          } else {
+            speechList.add({"fromApp": "$text", "fromUser": ""});
+          }
 
-        print("$check == $valueCheck");
+          if (controller.hasClients == true) {
+            controller.animateTo(
+              0.0,
+              curve: Curves.easeOut,
+              duration: const Duration(milliseconds: 300),
+            );
+          }
+        });
+      }
 
-        audioPlayer = AudioPlayer(mode: PlayerMode.MEDIA_PLAYER);
-        AudioPlayer.logEnabled = false;
+      audioPlayer = AudioPlayer(mode: PlayerMode.MEDIA_PLAYER);
 
-        audioPlayer.play(file.path, isLocal: true).then((value) {
+      AudioPlayer.logEnabled = false;
+
+      await audioPlayer
+          .play(file.path, isLocal: true)
+          .then((value) {})
+          .catchError((error) {
+        print("error =======> $error");
+      });
+
+      audioPlayer.onPlayerCompletion.listen((event) async {
+        audioPlayer.stop();
+        if (check + 1 != emailList.length) {
           check = check + 1;
           valueCheck = valueCheck + 1;
           readNext = true;
+          String speechText =
+              "${emailList[check]["Subject"]} From ${emailList[check]["From"]}";
+          await speakAll(
+              speechText, textfromUser, emailList[check]["Id"], emailList);
           if (sharedPreferences.getString("LoginType") == "GoogleLogin") {
             mails.setSeen(id);
             unseenEmailList.removeWhere((element) => element.toString() == id);
           } else if (sharedPreferences.getString("LoginType") == "ImapLogin") {
             imapSeen(id);
           }
-        }).catchError((error) {
-          print("error =======> $error");
-        });
+        }
       });
-    }
+    });
 
     return "complete";
   }
@@ -1882,7 +1927,9 @@ class _HomeState extends State<Home> {
                                       currentVoiceCommand =
                                           currentVoiceCommand + 1;
                                     }
-                                    for (var a = 0; a < voiceCommandList.length; a++) {
+                                    for (var a = 0;
+                                        a < voiceCommandList.length;
+                                        a++) {
                                       voiceCommandList[a]["CurrentUse"] = false;
                                     }
                                     _speak(
@@ -1982,12 +2029,17 @@ class _HomeState extends State<Home> {
                                           setState(() {
                                             changeBtnColor = "center";
                                           });
-                                          
+
                                           if (
-                                            // voiceCommandList[currentVoiceCommand]["VoiceCommand"] !=
-                                            //       userVoiceCommand && 
-                                                  voiceCommandList[currentVoiceCommand]["CurrentUse"] == false) {
-                                            voiceCommandList[currentVoiceCommand]["CurrentUse"] = true;
+                                              // voiceCommandList[currentVoiceCommand]["VoiceCommand"] !=
+                                              //       userVoiceCommand &&
+                                              voiceCommandList[
+                                                          currentVoiceCommand]
+                                                      ["CurrentUse"] ==
+                                                  false) {
+                                            voiceCommandList[
+                                                    currentVoiceCommand]
+                                                ["CurrentUse"] = true;
                                             for (var a = 0;
                                                 a < voiceCommandList.length;
                                                 a++) {
@@ -1999,7 +2051,6 @@ class _HomeState extends State<Home> {
                                             resultForRead(voiceCommandList[
                                                     currentVoiceCommand]
                                                 ["VoiceCommand"]);
-                                            
                                           } else {
                                             print("stop");
                                           }
