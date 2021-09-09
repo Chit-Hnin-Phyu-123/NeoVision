@@ -105,7 +105,7 @@ class _HomeState extends State<Home> {
   //   });
   // }
 
-  getMessage() async {
+  Future getMessage() async {
     await mails.getMessage().then((value) {
       setState(() {
         loading = false;
@@ -123,52 +123,61 @@ class _HomeState extends State<Home> {
           //   var emailbody = utf8.decode(base64.decode(message.payload.parts[0].body.data));
           // }
 
-          var emailsubject = message.snippet;
           if (message.payload.headers.length != 0) {
             message.payload.headers.forEach((header) {
               if (header.name == "From" || header.value == "from") {
                 var name = header.value.substring(0, header.value.indexOf('<'));
                 var res = name.replaceAll('"', "");
-                emailList.add({
-                  "Id": "${message.id}",
-                  "From": "$res",
-                  "Subject": "$emailsubject",
-                  "Date": "",
-                  "To": ""
+
+                message.payload.headers.forEach((header2) {
+                  if (header2.name == "Subject") {
+                    var emailsubject = header2.value;
+
+                    emailList.add({
+                      "Id": "${message.id}",
+                      "From": "$res",
+                      "Subject": "$emailsubject",
+                      "Date": "",
+                      "To": ""
+                    });
+
+                    print(emailList);
+                  }
                 });
-                // if (emailbody.indexOf("<https:") < 0) {
-                //   emailbody = emailbody.replaceAll("==", "");
-                //   emailList.add({
-                //     "Id": "${message.id}",
-                //     "From": "$res",
-                //     "Subject": "$emailsubject",
-                //     "Date": "",
-                //     "To": ""
-                //   });
-                // } else {
-                //   List httpList = emailbody.split("<htt");
-                //   String realEmailBody = emailbody;
-                //   httpList.forEach((element) {
-                //     if (element.indexOf("ps://") < 0) {
-                //       //
-                //     } else {
-                //       var httpValue = element.substring(
-                //           element.indexOf("ps://"), (element.indexOf(">") + 1));
-                //       realEmailBody = realEmailBody.replaceAll(httpValue, "");
-                //       realEmailBody = realEmailBody.replaceAll("<htt", "");
-                //     }
-                //   });
-                //   realEmailBody = realEmailBody.replaceAll("==", "");
-                //   // this.list.add(GmailMoel("$res", "$realEmailBody"));
-                //   emailList.add({
-                //     "Id": "${message.id}",
-                //     "From": "$res",
-                //     "Subject": "$realEmailBody",
-                //     "Date": "",
-                //     "To": ""
-                //   });
-                // }
               }
+
+              // if (emailbody.indexOf("<https:") < 0) {
+              //   emailbody = emailbody.replaceAll("==", "");
+              //   emailList.add({
+              //     "Id": "${message.id}",
+              //     "From": "$res",
+              //     "Subject": "$emailsubject",
+              //     "Date": "",
+              //     "To": ""
+              //   });
+              // } else {
+              //   List httpList = emailbody.split("<htt");
+              //   String realEmailBody = emailbody;
+              //   httpList.forEach((element) {
+              //     if (element.indexOf("ps://") < 0) {
+              //       //
+              //     } else {
+              //       var httpValue = element.substring(
+              //           element.indexOf("ps://"), (element.indexOf(">") + 1));
+              //       realEmailBody = realEmailBody.replaceAll(httpValue, "");
+              //       realEmailBody = realEmailBody.replaceAll("<htt", "");
+              //     }
+              //   });
+              //   realEmailBody = realEmailBody.replaceAll("==", "");
+              //   // this.list.add(GmailMoel("$res", "$realEmailBody"));
+              //   emailList.add({
+              //     "Id": "${message.id}",
+              //     "From": "$res",
+              //     "Subject": "$realEmailBody",
+              //     "Date": "",
+              //     "To": ""
+              //   });
+              // }
             });
           }
         }
@@ -547,6 +556,8 @@ class _HomeState extends State<Home> {
         } else if (isReadAll == "readnew") {
           List unreadList = [];
           check = 0;
+          print(emailList.length);
+          print(unseenEmailList.length);
           for (var a = 0; a < emailList.length; a++) {
             for (var b = 0; b < unseenEmailList.length; b++) {
               if (emailList[a]["Id"].toString() ==
@@ -556,7 +567,6 @@ class _HomeState extends State<Home> {
 
               if (a == emailList.length - 1) {
                 if (b == unseenEmailList.length - 1) {
-                  // print(unreadList);
                   // for (var c = 0; c < unreadList.length; c++) {
                   String speechText =
                       "${unreadList[check]["Subject"]} From ${unreadList[check]["From"]}";
@@ -684,94 +694,222 @@ class _HomeState extends State<Home> {
 
   bool downloadAudioFile = false;
 
-  void resultForRead(String text) {
-    setState(() async {
+  Future<void> resultForRead(String text) async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    setState(() {
       isStop = false;
       userVoiceCommand = text;
       if (text.toLowerCase() == "stop") {
         remainText = null;
         _stop();
       }
+    });
 
-      if (text.toLowerCase().startsWith("check emails") ||
-          text.toLowerCase().startsWith("check email") ||
-          text.toLowerCase().startsWith("check my mail") ||
-          text.toLowerCase().startsWith("check my mails") ||
-          text.toLowerCase().startsWith("check my email") ||
-          text.toLowerCase().startsWith("check my emails") ||
-          text.toLowerCase().startsWith("check new email") ||
-          text.toLowerCase().startsWith("check new emails") ||
-          text.toLowerCase().startsWith("read new") ||
-          text.toLowerCase().startsWith("read all") ||
-          text.toLowerCase().startsWith("read email") ||
-          text.toLowerCase().startsWith("read emails") ||
-          text.toLowerCase().startsWith("read all email") ||
-          text.toLowerCase().startsWith("read all emails") ||
-          text.toLowerCase().startsWith("read new email") ||
-          text.toLowerCase().startsWith("read new emails") ||
-          text.toLowerCase().startsWith("read this") ||
-          text.toLowerCase().startsWith("read it") ||
-          text.toLowerCase().startsWith("read ") ||
-          text.toLowerCase().startsWith("read email from") ||
-          text.toLowerCase().startsWith("read emails from") ||
-          text.toLowerCase().startsWith("stop") ||
-          text.toLowerCase().startsWith("skip") ||
-          text.toLowerCase().startsWith("next") ||
-          text.toLowerCase().startsWith("Change Account") ||
-          text.toLowerCase().startsWith("Switch Account")) {
-        List accountDetailList = [];
-        SharedPreferences sharedPreferences =
-            await SharedPreferences.getInstance();
+    if (text.toLowerCase().startsWith("check emails") ||
+        text.toLowerCase().startsWith("check email") ||
+        text.toLowerCase().startsWith("check my mail") ||
+        text.toLowerCase().startsWith("check my mails") ||
+        text.toLowerCase().startsWith("check my email") ||
+        text.toLowerCase().startsWith("check my emails") ||
+        text.toLowerCase().startsWith("check new email") ||
+        text.toLowerCase().startsWith("check new emails") ||
+        text.toLowerCase().startsWith("read new") ||
+        text.toLowerCase().startsWith("read all") ||
+        text.toLowerCase().startsWith("read email") ||
+        text.toLowerCase().startsWith("read emails") ||
+        text.toLowerCase().startsWith("read all email") ||
+        text.toLowerCase().startsWith("read all emails") ||
+        text.toLowerCase().startsWith("read new email") ||
+        text.toLowerCase().startsWith("read new emails") ||
+        text.toLowerCase().startsWith("read this") ||
+        text.toLowerCase().startsWith("read it") ||
+        text.toLowerCase().startsWith("read ") ||
+        text.toLowerCase().startsWith("read email from") ||
+        text.toLowerCase().startsWith("read emails from") ||
+        text.toLowerCase().startsWith("stop") ||
+        text.toLowerCase().startsWith("skip") ||
+        text.toLowerCase().startsWith("next") ||
+        text.toLowerCase().startsWith("Change Account") ||
+        text.toLowerCase().startsWith("Switch Account")) {
+      List accountDetailList = [];
 
-        if (sharedPreferences.getString("AccountDetailList") == null ||
-            sharedPreferences.getString("AccountDetailList") == "") {
-          accountDetailList = [];
+      if (sharedPreferences.getString("AccountDetailList") == null ||
+          sharedPreferences.getString("AccountDetailList") == "") {
+        accountDetailList = [];
+      } else {
+        accountDetailList =
+            json.decode(sharedPreferences.getString("AccountDetailList"));
+      }
+
+      if (text.toLowerCase() == "Change Account" ||
+          text.toLowerCase() == "Switch Account") {
+        if (accountDetailList.length == 1) {
+          _speak(
+              text,
+              "You have ${accountDetailList.length} Account. It is ${accountDetailList[0]["EmailAddress"]}. Do you want to Login with this account?",
+              "false");
         } else {
-          accountDetailList =
-              json.decode(sharedPreferences.getString("AccountDetailList"));
-        }
+          String accounts = "";
+          for (var j = 0; j < accountDetailList.length; j++) {
+            if (j + 2 == accountDetailList.length) {
+              accounts =
+                  accounts + accountDetailList[j]["EmailAddress"] + " and ";
+            } else {
+              accounts = accounts + accountDetailList[j]["EmailAddress"] + ". ";
+            }
 
-        if (text.toLowerCase() == "Change Account" ||
-            text.toLowerCase() == "Switch Account") {
-          if (accountDetailList.length == 1) {
-            _speak(
-                text,
-                "You have ${accountDetailList.length} Account. It is ${accountDetailList[0]["EmailAddress"]}. Do you want to Login with this account?",
-                "false");
-          } else {
-            String accounts = "";
-            for (var j = 0; j < accountDetailList.length; j++) {
-              if (j + 2 == accountDetailList.length) {
-                accounts =
-                    accounts + accountDetailList[j]["EmailAddress"] + " and ";
-              } else {
-                accounts =
-                    accounts + accountDetailList[j]["EmailAddress"] + ". ";
-              }
-
-              if (j == accountDetailList.length - 1) {
-                _speak(
-                    text,
-                    "You have ${accountDetailList.length} Accounts. $accounts",
-                    "false");
-              }
+            if (j == accountDetailList.length - 1) {
+              _speak(
+                  text,
+                  "You have ${accountDetailList.length} Accounts. $accounts",
+                  "false");
             }
           }
         }
+      }
 
-        if (userVoiceCommand.toLowerCase() == "change account" ||
-            userVoiceCommand.toLowerCase() == "switch account") {
-          if (text.toLowerCase() == "yes") {
-            if (accountDetailList[0]["LoginType"] == "ImapLogin") {
+      if (userVoiceCommand.toLowerCase() == "change account" ||
+          userVoiceCommand.toLowerCase() == "switch account") {
+        if (text.toLowerCase() == "yes") {
+          if (accountDetailList[0]["LoginType"] == "ImapLogin") {
+            setState(() {
+              loading = true;
+            });
+
+            var userDetail = {
+              "EmailAddress": "${accountDetailList[0]["EmailAddress"]}",
+              "HostServer": "${accountDetailList[0]["Password"]}",
+              "ImapServerPort": accountDetailList[0]["HostServer"],
+              "EmailPassword": "${accountDetailList[0]["ImapServerPort"]}"
+            };
+            sharedPreferences.setString("UserDetail", json.encode(userDetail));
+
+            sharedPreferences.setString("LoginType", "ImapLogin");
+
+            String userName = "${userDetail["EmailAddress"]}";
+            String password = "${userDetail["EmailPassword"]}";
+            String hostServer = "${userDetail["HostServer"]}";
+            int imapServerPort = userDetail["ImapServerPort"];
+            bool isImapServerSecure = true;
+            print("ImapExample");
+
+            final client = ImapClient(isLogEnabled: false);
+
+            await client
+                .connectToServer(hostServer, imapServerPort,
+                    isSecure: isImapServerSecure)
+                .then((value) {
+              print("Connected Success");
+              setState(() {
+                loading = false;
+              });
+            }).catchError((error) {
+              print("Connect Fail => $error");
+              setState(() {
+                loading = false;
+              });
+              _speak(text, "Connect fail!", "false");
+            });
+            await client.login(userName, password).then((value) {
+              print("Login Success");
+              setState(() {
+                loading = false;
+              });
+
+              List accountDetailList = [];
+
+              if (sharedPreferences.getString("AccountDetailList") == null ||
+                  sharedPreferences.getString("AccountDetailList") == "") {
+                accountDetailList = [];
+              } else {
+                accountDetailList = json
+                    .decode(sharedPreferences.getString("AccountDetailList"));
+              }
+
+              DateTime dateTime = DateTime.now();
+
+              var accountDetail = {
+                "EmailAddress": "${userDetail["EmailAddress"]}",
+                "Password": "${userDetail["EmailPassword"]}",
+                "HostServer": "${userDetail["HostServer"]}",
+                "ImapServerPort": userDetail["ImapServerPort"],
+                "LastSignin": {
+                  "Date": dateTime,
+                  "Year": dateTime.year,
+                  "Month": dateTime.month,
+                  "Day": dateTime.day,
+                  "WeekDay": dateTime.weekday,
+                  "Hour": dateTime.hour,
+                  "Minute": dateTime.minute,
+                  "Second": dateTime.second
+                },
+                "LoginType": "ImapLogin"
+              };
+
+              if (accountDetailList
+                      .where((element) =>
+                          element["EmailAddress"] == userDetail["EmailAddress"])
+                      .toList()
+                      .length ==
+                  0) {
+                accountDetailList.add(accountDetail);
+              } else {
+                accountDetailList
+                    .where((element) =>
+                        element["EmailAddress"] == userDetail["EmailAddress"])
+                    .toList()[0] = accountDetail;
+              }
+              sharedPreferences.setString(
+                  "AccountDetailList", json.encode(accountDetailList));
+
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => Home()),
+                (Route<dynamic> route) => false,
+              );
+            }).catchError((error) {
+              print("Login Error");
+              setState(() {
+                loading = false;
+              });
+              _speak(text, "Login fail!", "false");
+            });
+          } else if (accountDetailList[0]["LoginType"] == "GoogleLogin") {
+            setState(() {
+              loading = true;
+            });
+            await GMail().getHttpClient().then((value) {
+              sharedPreferences.setString("LoginType", "GoogleLogin");
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => Home()),
+                (Route<dynamic> route) => false,
+              );
+            }).catchError((error) {
+              setState(() {
+                loading = false;
+              });
+              _speak(text, "Login fail!", "false");
+            });
+          }
+        } else if (text.toLowerCase() == "no") {
+          //
+        } else if (text.toLowerCase().startsWith("change")) {
+          int k = wordToNumber(text.toLowerCase().replaceAll("change ", ""));
+
+          if (k > accountDetailList.length) {
+            //
+          } else {
+            if (accountDetailList[k - 1]["LoginType"] == "ImapLogin") {
               setState(() {
                 loading = true;
               });
 
               var userDetail = {
-                "EmailAddress": "${accountDetailList[0]["EmailAddress"]}",
-                "HostServer": "${accountDetailList[0]["Password"]}",
-                "ImapServerPort": accountDetailList[0]["HostServer"],
-                "EmailPassword": "${accountDetailList[0]["ImapServerPort"]}"
+                "EmailAddress": "${accountDetailList[k - 1]["EmailAddress"]}",
+                "HostServer": "${accountDetailList[k - 1]["Password"]}",
+                "ImapServerPort": accountDetailList[k - 1]["HostServer"],
+                "EmailPassword": "${accountDetailList[k - 1]["ImapServerPort"]}"
               };
               sharedPreferences.setString(
                   "UserDetail", json.encode(userDetail));
@@ -867,7 +1005,7 @@ class _HomeState extends State<Home> {
                 });
                 _speak(text, "Login fail!", "false");
               });
-            } else if (accountDetailList[0]["LoginType"] == "GoogleLogin") {
+            } else if (accountDetailList[k - 1]["LoginType"] == "GoogleLogin") {
               setState(() {
                 loading = true;
               });
@@ -885,25 +1023,21 @@ class _HomeState extends State<Home> {
                 _speak(text, "Login fail!", "false");
               });
             }
-          } else if (text.toLowerCase() == "no") {
-            //
-          } else if (text.toLowerCase().startsWith("change")) {
-            int k = wordToNumber(text.toLowerCase().replaceAll("change ", ""));
-
-            if (k > accountDetailList.length) {
-              //
-            } else {
-              if (accountDetailList[k - 1]["LoginType"] == "ImapLogin") {
+          }
+        } else {
+          for (var j = 0; j < accountDetailList.length; j++) {
+            if (text.toLowerCase() ==
+                accountDetailList[j]["EmailAddress"].toString().toLowerCase()) {
+              if (accountDetailList[j]["LoginType"] == "ImapLogin") {
                 setState(() {
                   loading = true;
                 });
 
                 var userDetail = {
-                  "EmailAddress": "${accountDetailList[k - 1]["EmailAddress"]}",
-                  "HostServer": "${accountDetailList[k - 1]["Password"]}",
-                  "ImapServerPort": accountDetailList[k - 1]["HostServer"],
-                  "EmailPassword":
-                      "${accountDetailList[k - 1]["ImapServerPort"]}"
+                  "EmailAddress": "${accountDetailList[j]["EmailAddress"]}",
+                  "HostServer": "${accountDetailList[j]["Password"]}",
+                  "ImapServerPort": accountDetailList[j]["HostServer"],
+                  "EmailPassword": "${accountDetailList[j]["ImapServerPort"]}"
                 };
                 sharedPreferences.setString(
                     "UserDetail", json.encode(userDetail));
@@ -1001,8 +1135,7 @@ class _HomeState extends State<Home> {
                   });
                   _speak(text, "Login fail!", "false");
                 });
-              } else if (accountDetailList[k - 1]["LoginType"] ==
-                  "GoogleLogin") {
+              } else if (accountDetailList[j]["LoginType"] == "GoogleLogin") {
                 setState(() {
                   loading = true;
                 });
@@ -1021,151 +1154,83 @@ class _HomeState extends State<Home> {
                 });
               }
             }
-          } else {
-            for (var j = 0; j < accountDetailList.length; j++) {
-              if (text.toLowerCase() ==
-                  accountDetailList[j]["EmailAddress"]
-                      .toString()
-                      .toLowerCase()) {
-                if (accountDetailList[j]["LoginType"] == "ImapLogin") {
-                  setState(() {
-                    loading = true;
-                  });
-
-                  var userDetail = {
-                    "EmailAddress": "${accountDetailList[j]["EmailAddress"]}",
-                    "HostServer": "${accountDetailList[j]["Password"]}",
-                    "ImapServerPort": accountDetailList[j]["HostServer"],
-                    "EmailPassword": "${accountDetailList[j]["ImapServerPort"]}"
-                  };
-                  sharedPreferences.setString(
-                      "UserDetail", json.encode(userDetail));
-
-                  sharedPreferences.setString("LoginType", "ImapLogin");
-
-                  String userName = "${userDetail["EmailAddress"]}";
-                  String password = "${userDetail["EmailPassword"]}";
-                  String hostServer = "${userDetail["HostServer"]}";
-                  int imapServerPort = userDetail["ImapServerPort"];
-                  bool isImapServerSecure = true;
-                  print("ImapExample");
-
-                  final client = ImapClient(isLogEnabled: false);
-
-                  await client
-                      .connectToServer(hostServer, imapServerPort,
-                          isSecure: isImapServerSecure)
-                      .then((value) {
-                    print("Connected Success");
-                    setState(() {
-                      loading = false;
-                    });
-                  }).catchError((error) {
-                    print("Connect Fail => $error");
-                    setState(() {
-                      loading = false;
-                    });
-                    _speak(text, "Connect fail!", "false");
-                  });
-                  await client.login(userName, password).then((value) {
-                    print("Login Success");
-                    setState(() {
-                      loading = false;
-                    });
-
-                    List accountDetailList = [];
-
-                    if (sharedPreferences.getString("AccountDetailList") ==
-                            null ||
-                        sharedPreferences.getString("AccountDetailList") ==
-                            "") {
-                      accountDetailList = [];
-                    } else {
-                      accountDetailList = json.decode(
-                          sharedPreferences.getString("AccountDetailList"));
-                    }
-
-                    DateTime dateTime = DateTime.now();
-
-                    var accountDetail = {
-                      "EmailAddress": "${userDetail["EmailAddress"]}",
-                      "Password": "${userDetail["EmailPassword"]}",
-                      "HostServer": "${userDetail["HostServer"]}",
-                      "ImapServerPort": userDetail["ImapServerPort"],
-                      "LastSignin": {
-                        "Date": dateTime,
-                        "Year": dateTime.year,
-                        "Month": dateTime.month,
-                        "Day": dateTime.day,
-                        "WeekDay": dateTime.weekday,
-                        "Hour": dateTime.hour,
-                        "Minute": dateTime.minute,
-                        "Second": dateTime.second
-                      },
-                      "LoginType": "ImapLogin"
-                    };
-
-                    if (accountDetailList
-                            .where((element) =>
-                                element["EmailAddress"] ==
-                                userDetail["EmailAddress"])
-                            .toList()
-                            .length ==
-                        0) {
-                      accountDetailList.add(accountDetail);
-                    } else {
-                      accountDetailList
-                          .where((element) =>
-                              element["EmailAddress"] ==
-                              userDetail["EmailAddress"])
-                          .toList()[0] = accountDetail;
-                    }
-                    sharedPreferences.setString(
-                        "AccountDetailList", json.encode(accountDetailList));
-
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => Home()),
-                      (Route<dynamic> route) => false,
-                    );
-                  }).catchError((error) {
-                    print("Login Error");
-                    setState(() {
-                      loading = false;
-                    });
-                    _speak(text, "Login fail!", "false");
-                  });
-                } else if (accountDetailList[j]["LoginType"] == "GoogleLogin") {
-                  setState(() {
-                    loading = true;
-                  });
-                  await GMail().getHttpClient().then((value) {
-                    sharedPreferences.setString("LoginType", "GoogleLogin");
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => Home()),
-                      (Route<dynamic> route) => false,
-                    );
-                  }).catchError((error) {
-                    setState(() {
-                      loading = false;
-                    });
-                    _speak(text, "Login fail!", "false");
-                  });
-                }
-              }
-            }
           }
         }
-        //
-        if (text.toLowerCase() == "check email" ||
-            text.toLowerCase() == "check emails" ||
-            text.toLowerCase() == "check new email" ||
-            text.toLowerCase() == "check new emails" ||
-            text.toLowerCase() == "check my mail" ||
-            text.toLowerCase() == "check my mails" ||
-            text.toLowerCase() == "check my email" ||
-            text.toLowerCase() == "check my emails") {
+      }
+      //
+      if (text.toLowerCase() == "check email" ||
+          text.toLowerCase() == "check emails" ||
+          text.toLowerCase() == "check new email" ||
+          text.toLowerCase() == "check new emails" ||
+          text.toLowerCase() == "check my mail" ||
+          text.toLowerCase() == "check my mails" ||
+          text.toLowerCase() == "check my email" ||
+          text.toLowerCase() == "check my emails") {
+        if (unseenEmailList.length == 0) {
+          setState(() {
+            loading = true;
+          });
+          if (sharedPreferences.getString("LoginType") == "ImapLogin") {
+            imapExample().then((value) {
+              if (unseenEmailList.length == 0 || unseenEmailList.length == 1) {
+                _speak(text, "There is ${unseenEmailList.length} New Email.",
+                    "false");
+              } else {
+                _speak(text, "There are ${unseenEmailList.length} New Emails.",
+                    "false");
+              }
+            });
+          } else if (sharedPreferences.getString("LoginType") ==
+              "GoogleLogin") {
+            await mails.getMessage().then((value) {
+              setState(() {
+                loading = false;
+              });
+              emailList = [];
+              unseenEmailList = [];
+              value.forEach((message) {
+                if (message.labelIds.contains("UNREAD")) {
+                  unseenEmailList.add(message.id);
+                }
+                if (message.payload == null) {
+                  //
+                } else {
+                  if (message.payload.headers.length != 0) {
+                    message.payload.headers.forEach((header) {
+                      if (header.name == "From" || header.value == "from") {
+                        var name = header.value
+                            .substring(0, header.value.indexOf('<'));
+                        var res = name.replaceAll('"', "");
+
+                        message.payload.headers.forEach((header2) {
+                          if (header2.name == "Subject") {
+                            var emailsubject = header2.value;
+
+                            emailList.add({
+                              "Id": "${message.id}",
+                              "From": "$res",
+                              "Subject": "$emailsubject",
+                              "Date": "",
+                              "To": ""
+                            });
+                          }
+                        });
+                      }
+                    });
+                  }
+                }
+              });
+
+              if (unseenEmailList.length == 0 || unseenEmailList.length == 1) {
+                _speak(text, "There is ${unseenEmailList.length} New Email.",
+                    "false");
+              } else {
+                _speak(text, "There are ${unseenEmailList.length} New Emails.",
+                    "false");
+              }
+            });
+          }
+        } else {
           if (unseenEmailList.length == 0 || unseenEmailList.length == 1) {
             _speak(
                 text, "There is ${unseenEmailList.length} New Email.", "false");
@@ -1174,120 +1239,120 @@ class _HomeState extends State<Home> {
                 "false");
           }
         }
+      }
 
-        // if (text.toLowerCase() == "read new" ||
-        //     text.toLowerCase() == "read new email" ||
-        //     text.toLowerCase() == "read new emails" ||
-        //     text.toLowerCase() == "read all" ||
-        //     text.toLowerCase() == "read all email" ||
-        //     text.toLowerCase() == "read all emails") {
-        //   print("The text is ==> " + text);
-        //   await _speak(text, "$text", "readall");
-        // }
+      // if (text.toLowerCase() == "read new" ||
+      //     text.toLowerCase() == "read new email" ||
+      //     text.toLowerCase() == "read new emails" ||
+      //     text.toLowerCase() == "read all" ||
+      //     text.toLowerCase() == "read all email" ||
+      //     text.toLowerCase() == "read all emails") {
+      //   print("The text is ==> " + text);
+      //   await _speak(text, "$text", "readall");
+      // }
 
-        if (text.toLowerCase() == "read new" ||
-            text.toLowerCase() == "read new email" ||
-            text.toLowerCase() == "read new emails" ||
-            text.toLowerCase() == "read email" ||
-            text.toLowerCase() == "read emails") {
-          print("The text is ==> " + text);
-          await _speak(text, "$text", "readnew");
-        }
-        if (text.toLowerCase() == "read all" ||
-            text.toLowerCase() == "read all email" ||
-            text.toLowerCase() == "read all emails") {
-          // check = 0;
-          print("The text is ==> " + text);
-          await _speak(text, "$text", "readall");
-        } else {
-          if (text.toLowerCase() == "read this" ||
-              text.toLowerCase() == "read it") {
-            _speak(text, "$lastSpeechWord", "false");
-          }
-          if (text.toLowerCase().startsWith("read email from ") &&
-              emailList.length != 0) {
-            String getsender =
-                text.toLowerCase().replaceAll("read email from ", "");
-            List specificEmail = emailList
-                .where((element) =>
-                    element["From"].toString().toLowerCase() ==
-                    getsender.toLowerCase())
-                .toList();
-            if (specificEmail.length == 0) {
-              _speak(text, "You have no email from this user.", "false");
-            } else {
-              _speak(text, "${specificEmail[0]["Subject"]}", "false");
-            }
-          } else if (text.toLowerCase().startsWith("read emails from ") &&
-              emailList.length != 0) {
-            String getsender =
-                text.toLowerCase().replaceAll("read emails from ", "");
-            List specificEmail = emailList
-                .where((element) =>
-                    element["From"].toString().toLowerCase() ==
-                    getsender.toLowerCase())
-                .toList();
-            if (specificEmail.length == 0) {
-              _speak(text, "You have no email from this user.", "false");
-            } else {
-              _speak(text, "${specificEmail[0]["Subject"]}", "false");
-            }
-          } else if (text.toLowerCase().startsWith("read ") &&
-              emailList.length != 0) {
-            int indexNum =
-                wordToNumber(text.toLowerCase().replaceAll("read ", ""));
-
-            if (indexNum > emailList.length) {
-              //
-            } else {
-              if (indexNum != 0) {
-                _speak(
-                    text,
-                    "${emailList[indexNum - 1]["Subject"]} From ${emailList[indexNum - 1]["From"]}",
-                    "false");
-              }
-            }
-          }
-        }
-
-        if ((text.toLowerCase() == "skip" || text.toLowerCase() == "next") &&
-            emailList.length != 0) {
-          if (readEmail != null &&
-              emailList.indexWhere((element) =>
-                      element["From"] == readEmail["From"] &&
-                      element["Subject"] == readEmail["Subject"]) !=
-                  emailList.length - 1) {
-            _speak(
-                text,
-                "${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["Subject"]} From ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["From"]}",
-                "false");
-          } else {
-            _speak(
-                text,
-                "${emailList[0]["Subject"]} From ${emailList[0]["From"]}",
-                "false");
-          }
-        }
+      if (text.toLowerCase() == "read new" ||
+          text.toLowerCase() == "read new email" ||
+          text.toLowerCase() == "read new emails" ||
+          text.toLowerCase() == "read email" ||
+          text.toLowerCase() == "read emails") {
+        print("The text is ==> " + text);
+        await _speak(text, "$text", "readnew");
+      }
+      if (text.toLowerCase() == "read all" ||
+          text.toLowerCase() == "read all email" ||
+          text.toLowerCase() == "read all emails") {
+        // check = 0;
+        print("The text is ==> " + text);
+        await _speak(text, "$text", "readall");
       } else {
-        if (remainTextList.length != 0) {
-          for (var b = 0; b < remainTextList.length; b++) {
-            if (remainText == null) {
-              remainText = remainTextList[b];
-            } else {
-              remainText = remainText + " " + remainTextList[b];
-            }
+        if (text.toLowerCase() == "read this" ||
+            text.toLowerCase() == "read it") {
+          _speak(text, "$lastSpeechWord", "false");
+        }
+        if (text.toLowerCase().startsWith("read email from ") &&
+            emailList.length != 0) {
+          String getsender =
+              text.toLowerCase().replaceAll("read email from ", "");
+          List specificEmail = emailList
+              .where((element) =>
+                  element["From"].toString().toLowerCase() ==
+                  getsender.toLowerCase())
+              .toList();
+          if (specificEmail.length == 0) {
+            _speak(text, "You have no email from this user.", "false");
+          } else {
+            _speak(text, "${specificEmail[0]["Subject"]}", "false");
+          }
+        } else if (text.toLowerCase().startsWith("read emails from ") &&
+            emailList.length != 0) {
+          String getsender =
+              text.toLowerCase().replaceAll("read emails from ", "");
+          List specificEmail = emailList
+              .where((element) =>
+                  element["From"].toString().toLowerCase() ==
+                  getsender.toLowerCase())
+              .toList();
+          if (specificEmail.length == 0) {
+            _speak(text, "You have no email from this user.", "false");
+          } else {
+            _speak(text, "${specificEmail[0]["Subject"]}", "false");
+          }
+        } else if (text.toLowerCase().startsWith("read ") &&
+            emailList.length != 0) {
+          int indexNum =
+              wordToNumber(text.toLowerCase().replaceAll("read ", ""));
 
-            if (b == remainTextList.length - 1) {
-              if (remainText != null) {
-                if (remainText.length != 0) {
-                  _speak(text, remainText, "false");
-                }
+          if (indexNum > emailList.length) {
+            //
+          } else {
+            if (indexNum != 0) {
+              _speak(
+                  text,
+                  "${emailList[indexNum - 1]["Subject"]} From ${emailList[indexNum - 1]["From"]}",
+                  "false");
+            }
+          }
+        }
+      }
+
+      if ((text.toLowerCase() == "skip" || text.toLowerCase() == "next") &&
+          emailList.length != 0) {
+        if (readEmail != null &&
+            emailList.indexWhere((element) =>
+                    element["From"] == readEmail["From"] &&
+                    element["Subject"] == readEmail["Subject"]) !=
+                emailList.length - 1) {
+          _speak(
+              text,
+              "${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["Subject"]} From ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["From"]}",
+              "false");
+        } else {
+          _speak(
+              text,
+              "${emailList[0]["Subject"]} From ${emailList[0]["From"]}",
+              "false");
+        }
+      }
+    } else {
+      if (remainTextList.length != 0) {
+        for (var b = 0; b < remainTextList.length; b++) {
+          if (remainText == null) {
+            remainText = remainTextList[b];
+          } else {
+            remainText = remainText + " " + remainTextList[b];
+          }
+
+          if (b == remainTextList.length - 1) {
+            if (remainText != null) {
+              if (remainText.length != 0) {
+                _speak(text, remainText, "false");
               }
             }
           }
         }
       }
-    });
+    }
   }
 
   // @override
@@ -1536,6 +1601,12 @@ class _HomeState extends State<Home> {
 
       audioPlayer.onPlayerCompletion.listen((event) async {
         audioPlayer.stop();
+        if (sharedPreferences.getString("LoginType") == "GoogleLogin") {
+          mails.setSeen(id);
+          unseenEmailList.removeWhere((element) => element.toString() == id);
+        } else if (sharedPreferences.getString("LoginType") == "ImapLogin") {
+          imapSeen(id);
+        }
         if (check + 1 != emailList.length) {
           check = check + 1;
           valueCheck = valueCheck + 1;
@@ -1544,12 +1615,6 @@ class _HomeState extends State<Home> {
               "${emailList[check]["Subject"]} From ${emailList[check]["From"]}";
           await speakAll(
               speechText, textfromUser, emailList[check]["Id"], emailList);
-          if (sharedPreferences.getString("LoginType") == "GoogleLogin") {
-            mails.setSeen(id);
-            unseenEmailList.removeWhere((element) => element.toString() == id);
-          } else if (sharedPreferences.getString("LoginType") == "ImapLogin") {
-            imapSeen(id);
-          }
         }
       });
     });
