@@ -1,7 +1,5 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:neo_vision/GetMail.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'Home.dart';
@@ -19,6 +17,32 @@ class _LoginState extends State<Login> {
   bool showPassword = false;
 
   final _form = GlobalKey<FormState>();
+
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: [
+    "email",
+    "https://www.googleapis.com/auth/gmail.modify",
+  ]);
+  GoogleSignInAccount _currentUser;
+
+  @override
+  initState() {
+    super.initState();
+
+    // _googleSignIn.onCurrentUserChanged.listen((user) {
+    //   setState(() {
+    //     print("user change");
+    //     _currentUser = user;
+    //   });
+
+    //   if (user != null) {
+    //     // setState(() {
+    //     //   Navigator.pushReplacement(
+    //     //       context, MaterialPageRoute(builder: (context) => Home()));
+    //     // });
+    //   }
+    // });
+    // _googleSignIn.signInSilently();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,17 +81,39 @@ class _LoginState extends State<Login> {
                       ),
                       GestureDetector(
                         onTap: () async {
-                          SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
-                          await GMail().getHttpClient().then((value) {
-                            sharedPreferences.setString("LoginType", "GoogleLogin");
-                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
-                          });
+                          // SharedPreferences sharedPreferences =
+                          //     await SharedPreferences.getInstance();
+                          // await GMail().getHttpClient().then((value) {
+                          //   sharedPreferences.setString(
+                          //       "LoginType", "GoogleLogin");
+                          //   Navigator.pushReplacement(
+                          //       context,
+                          //       MaterialPageRoute(
+                          //           builder: (context) => Home()));
+                          // });
+                          // // imapExample();
+                          try {
+                            SharedPreferences sharedPreferences =
+                                await SharedPreferences.getInstance();
+                            print(_googleSignIn.currentUser);
+                            await _googleSignIn.signIn().then((value) {
+                              if (_googleSignIn.currentUser != null) {
+                                sharedPreferences.setString(
+                                    "LoginType", "GoogleLogin");
+                                Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => Home()));
+                              }
+                            });
+                          } on Exception catch (e) {
+                            print("Login error =====> $e");
+                          }
                         },
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.blue[300],
-                            borderRadius: BorderRadius.circular(5)
-                          ),
+                              color: Colors.blue[300],
+                              borderRadius: BorderRadius.circular(5)),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 50, vertical: 15),
@@ -76,13 +122,17 @@ class _LoginState extends State<Login> {
                               children: <Widget>[
                                 Text(
                                   "Google",
-                                  style: TextStyle(color: Colors.white, fontSize: 15),
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 15),
                                 ),
                                 SizedBox(
                                   width: 10,
                                 ),
                                 // Icon(Icons.mail_outline, color: Colors.white)
-                                Image.asset("assets/google.png", width: 20,)
+                                Image.asset(
+                                  "assets/google.png",
+                                  width: 20,
+                                )
                               ],
                             ),
                           ),
@@ -91,19 +141,23 @@ class _LoginState extends State<Login> {
                       SizedBox(
                         height: 20,
                       ),
-                      Text("Or", style: TextStyle(color: Colors.blue[300], fontSize: 15)),
+                      Text("Or",
+                          style:
+                              TextStyle(color: Colors.blue[300], fontSize: 15)),
                       SizedBox(
                         height: 20,
                       ),
                       GestureDetector(
                         onTap: () async {
-                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginWithOtherMail()));
+                          Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => LoginWithOtherMail()));
                         },
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.blue[300],
-                            borderRadius: BorderRadius.circular(5)
-                          ),
+                              color: Colors.blue[300],
+                              borderRadius: BorderRadius.circular(5)),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 50, vertical: 15),
@@ -112,13 +166,13 @@ class _LoginState extends State<Login> {
                               children: <Widget>[
                                 Text(
                                   "Other",
-                                  style: TextStyle(color: Colors.white, fontSize: 15),
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 15),
                                 ),
                                 SizedBox(
                                   width: 10,
                                 ),
-                                Icon(Icons.mail_outline,
-                                 color: Colors.white)
+                                Icon(Icons.mail_outline, color: Colors.white)
                               ],
                             ),
                           ),

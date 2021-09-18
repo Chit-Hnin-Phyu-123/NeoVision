@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "362145872917",
+    "project_id": "neo-vision-b31ba",
+    "storage_bucket": "neo-vision-b31ba.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:362145872917:android:90042c5bf62512ae2f221c",
+        "android_client_info": {
+          "package_name": "com.nirvasoft.neovision"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "362145872917-2v8sv35t4lvbktfttegpk03njn3e30gq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nirvasoft.neovision",
+            "certificate_hash": "9a983575d39b2e12a477fcd4675c24d07d2f5bf7"
+          }
+        },
+        {
+          "client_id": "362145872917-ib3vc9u54jtthg90r2ghv6f5d8a07ja5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nirvasoft.neovision",
+            "certificate_hash": "a791ba6014edab27599e49df04b4ed981c82fd1c"
+          }
+        },
+        {
+          "client_id": "362145872917-joauuo40uuova6kj1rk8or1t862sti1u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyChoyg2E3u3-iVpYzX323pYuyN4_HQMeiM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "362145872917-joauuo40uuova6kj1rk8or1t862sti1u.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

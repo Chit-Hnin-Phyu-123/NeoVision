@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 // import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 
 class SecureStorage {
   final storage = FlutterSecureStorage();
@@ -45,8 +46,14 @@ const _scopes = [
   gmail.GmailApi.GmailModifyScope
 ];
 
+final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: [
+  "email",
+  gmail.GmailApi.GmailModifyScope,
+]);
+
 class GMail {
   final storage = SecureStorage();
+
   //Get Authenticated Http Client
   Future<http.Client> getHttpClient() async {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
@@ -79,7 +86,7 @@ class GMail {
           "HostServer": "",
           "ImapServerPort": "",
           "LastSignin": {
-            "Date" : dateTime,
+            "Date": dateTime,
             "Year": dateTime.year,
             "Month": dateTime.month,
             "Day": dateTime.day,
@@ -98,12 +105,10 @@ class GMail {
             0) {
           accountDetailList.add(accountDetail);
         } else {
-                        accountDetailList
-                              .where((element) =>
-                                  element["EmailAddress"] ==
-                                  url)
-                              .toList()[0] = accountDetail;
-                      }
+          accountDetailList
+              .where((element) => element["EmailAddress"] == url)
+              .toList()[0] = accountDetail;
+        }
         sharedPreferences.setString(
             "AccountDetailList", json.encode(accountDetailList));
       });
@@ -127,7 +132,11 @@ class GMail {
   Future<void> _handleSignIn(String url) async {
     GoogleSignIn _googleSignIn = GoogleSignIn(
         clientId:
-            "183670288267-k6flall0oent8uie5g5rjvs5povk9oi8.apps.googleusercontent.com");
+            "183670288267-k6flall0oent8uie5g5rjvs5povk9oi8.apps.googleusercontent.com",
+        scopes: [
+          // gmail.GmailApi.gmailModifyScope,
+          gmail.GmailApi.GmailModifyScope
+        ]);
     try {
       GoogleSignInAccount user = await _googleSignIn.signIn();
 
@@ -144,13 +153,17 @@ class GMail {
 
   Future<List<gmail.Message>> getMessage() async {
     List<gmail.Message> data = [];
-    var client = await getHttpClient();
+    //var client = await getHttpClient();
+    await _googleSignIn.signInSilently();
+
+    var client = await _googleSignIn.authenticatedClient();
     try {
       var mails = gmail.GmailApi(client);
-      print('w');
+      print('get message from gmail API');
 
       gmail.ListMessagesResponse fileList = await mails.users.messages
           .list("me", includeSpamTrash: false, maxResults: 15);
+      print('Messages');
       print(fileList.toJson());
       var check = 0;
       for (var i = 0; i < fileList.messages.length; i++) {
@@ -177,7 +190,7 @@ class GMail {
   }
 
   Future<void> setSeen(id) async {
-    var client = await getHttpClient();
+    var client = await _googleSignIn.authenticatedClient();
     var mails = gmail.GmailApi(client);
     gmail.ModifyMessageRequest mod = gmail.ModifyMessageRequest();
     mod.removeLabelIds = ["UNREAD"];
@@ -190,7 +203,7 @@ class GMail {
   }
 
   Future<List<gmail.Thread>> getThread() async {
-    var client = await getHttpClient();
+    var client = await _googleSignIn.authenticatedClient();
     var mails = gmail.GmailApi(client);
     List<gmail.Thread> data = [];
 

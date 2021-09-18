@@ -6,7 +6,9 @@ import 'dart:math';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xml/xml.dart' as xml;
 import 'package:path_provider/path_provider.dart';
@@ -22,7 +24,6 @@ import 'GetMail.dart';
 import 'Login.dart';
 import 'SwitchAccount.dart';
 import 'WordToNum.dart';
-import 'package:googleapis/gmail/v1.dart' as gmail;
 
 class Home extends StatefulWidget {
   const Home({Key key}) : super(key: key);
@@ -34,8 +35,13 @@ class Home extends StatefulWidget {
 enum PopupMenuChoices { setting, voices, version, logout }
 
 class _HomeState extends State<Home> {
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: [
+    "email",
+    "https://www.googleapis.com/auth/gmail.modify",
+  ]);
+
   // FlutterTts flutterTts;
-  String version = '1.0.14';
+  String version = '1.0.16';
   String language;
   String engine;
   double volume = 0.5;
@@ -71,10 +77,10 @@ class _HomeState extends State<Home> {
 
   @override
   initState() {
-    super.initState();
     openWelcomeVoice();
     initSpeechState();
     checkLoginType();
+    super.initState();
   }
 
   Future<void> checkLoginType() async {
@@ -93,23 +99,15 @@ class _HomeState extends State<Home> {
   final mails = GMail();
   List<GmailMoel> list = [];
 
-  // List<gmail.Thread> listThead = [];
-  // List<gmail.Message> listMessage = [];
-
   int count = 0;
-
-  // void updateList() async {
-  //   listThead = (await mails.getThread());
-  //   setState(() {
-  //     count = listThead.length;
-  //   });
-  // }
 
   Future getMessage() async {
     await mails.getMessage().then((value) {
-      setState(() {
-        loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          loading = false;
+        });
+      }
       value.forEach((message) {
         if (message.labelIds.contains("UNREAD")) {
           unseenEmailList.add(message.id);
@@ -133,15 +131,41 @@ class _HomeState extends State<Home> {
                   if (header2.name == "Subject") {
                     var emailsubject = header2.value;
 
-                    emailList.add({
-                      "Id": "${message.id}",
-                      "From": "$res",
-                      "Subject": "$emailsubject",
-                      "Date": "",
-                      "To": ""
-                    });
+                    message.payload.headers.forEach((header3) {
+                      if (header3.name == "Date") {
+                        var date = header3.value;
+                        DateFormat dateFormat =
+                            DateFormat("dd MMM yyyy HH:mm:ss");
+                        DateTime dateTime = dateFormat.parse(date.substring(5));
+                        String onDate =
+                            "${dateTime.day}/${dateTime.month}/${dateTime.year}";
+                        String atTime = "${dateTime.hour}:${dateTime.minute}";
 
-                    print(emailList);
+                        emailList.add({
+                          "Id": "${message.id}",
+                          "From": "$res",
+                          "Subject": "$emailsubject",
+                          "Body": "${message.snippet}",
+                          "On": "$onDate",
+                          "At": "$atTime"
+                        });
+
+                        for (var a = 0; a < unseenEmailList.length; a++) {
+                          if (unseenEmailList[a] == message.id) {
+                            newEmailList.add({
+                              "Id": "${message.id}",
+                              "From": "$res",
+                              "Subject": "$emailsubject",
+                              "Body": "${message.snippet}",
+                              "On": "$onDate",
+                              "At": "$atTime"
+                            });
+                          }
+                        }
+
+                        print(emailList);
+                      }
+                    });
                   }
                 });
               }
@@ -183,13 +207,17 @@ class _HomeState extends State<Home> {
         }
       });
     });
-    setState(() {
-      this.count = list.length;
-    });
+    if (mounted) {
+      setState(() {
+        this.count = list.length;
+      });
+    }
   }
 
   List emailList = [];
   List unseenEmailList = [];
+  List newEmailList = [];
+  List oldEmailList = [];
 
   Future<void> imapExample() async {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
@@ -214,17 +242,21 @@ class _HomeState extends State<Home> {
       print("Connected Success");
     }).catchError((error) {
       print("Connect Fail => $error");
-      setState(() {
-        loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          loading = false;
+        });
+      }
     });
     await client.login(userName, password).then((value) {
       print("Login Success");
     }).catchError((error) {
       print("Login Error");
-      setState(() {
-        loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          loading = false;
+        });
+      }
     });
     // final mailboxes = await client.listMailboxes();
     // print('mailboxes: ${mailboxes.result}');
@@ -232,9 +264,11 @@ class _HomeState extends State<Home> {
       print("select inbox success");
     }).catchError((error) {
       print("select inbox fail");
-      setState(() {
-        loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          loading = false;
+        });
+      }
     });
     List<MimeMessage> subjectList = [];
 
@@ -251,9 +285,11 @@ class _HomeState extends State<Home> {
       subjectList = fetchResult.result.messages;
     }).catchError((error) {
       print("error ==> $error");
-      setState(() {
-        loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          loading = false;
+        });
+      }
     });
 
     List<MimeMessage> fromList = [];
@@ -269,76 +305,122 @@ class _HomeState extends State<Home> {
       // }
     }).catchError((error) {
       print("error ==> $error");
-      setState(() {
-        loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          loading = false;
+        });
+      }
     });
 
-    await getemailList(subjectList, fromList);
+    List<MimeMessage> dateList = [];
+
+    await client
+        .fetchRecentMessages(
+            messageCount: 20, criteria: 'BODY.PEEK[HEADER.FIELDS (DATE)]')
+        .then((fetchResult) {
+      print("fetchResult success");
+      dateList = fetchResult.result.messages;
+    }).catchError((error) {
+      print("error ==> $error");
+    });
+
+    await getemailList(subjectList, fromList, dateList);
     await client.logout();
   }
 
-  Future<void> getemailList(
-      List<MimeMessage> subjectList, List<MimeMessage> fromList) async {
+  Future<void> getemailList(List<MimeMessage> subjectList,
+      List<MimeMessage> fromList, List<MimeMessage> dateList) async {
     for (var i = 0; i < subjectList.length; i++) {
       for (var j = 0; j < fromList.length; j++) {
         if (subjectList[i].sequenceId == fromList[j].sequenceId) {
-          if (emailList.length == 0) {
-            if (subjectList[i].isTextPlainMessage()) {
-              emailList.add({
-                "Id": "${subjectList[i].sequenceId}",
-                "From": fromList[j].from[0].personalName,
-                "Subject": subjectList[i].decodeSubject(),
-                "Date": "",
-                "To": ""
-              });
-            } else {
-              emailList.add({
-                "Id": "${subjectList[i].sequenceId}",
-                "From": fromList[j].from[0].personalName,
-                "Subject": subjectList[i].decodeTextPlainPart(),
-                "Date": "",
-                "To": ""
-              });
-            }
-          } else {
-            if (emailList
-                    .where((element) =>
-                        element["From"] == fromList[j].from[0].personalName &&
-                        element["Subject"] == subjectList[i].decodeSubject())
-                    .toList()
-                    .length ==
-                0) {
-              if (subjectList[i].isTextPlainMessage()) {
-                emailList.add({
-                  "Id": "${subjectList[i].sequenceId}",
-                  "From": fromList[j].from[0].personalName,
-                  "Subject": subjectList[i].decodeSubject(),
-                  "Date": "",
-                  "To": ""
-                });
+          for (var k = 0; k < dateList.length; k++) {
+            if (subjectList[i].sequenceId == dateList[k].sequenceId) {
+              DateTime dateTime = dateList[k].decodeHeaderDateValue("Date");
+              String time = DateFormat.jm().format(
+                  DateFormat("yyyy-MM-dd HH:mm:ss").parse(dateTime.toString()));
+              String time2 = time.substring(0, time.lastIndexOf(":"));
+              String time3 = "";
+              if (time2.length != 2) {
+                time3 = "0" + time;
               } else {
-                emailList.add({
-                  "Id": "${subjectList[i].sequenceId}",
-                  "From": fromList[j].from[0].personalName,
-                  "Subject": subjectList[i].decodeTextPlainPart(),
-                  "Date": "",
-                  "To": ""
-                });
+                time3 = time;
+              }
+              String onDate =
+                  "${dateTime.day}/${dateTime.month}/${dateTime.year}";
+              String atTime = time3.substring(0, time.length - 3);
+              print("$onDate =======> $atTime");
+
+              if (emailList.length == 0) {
+                if (subjectList[i].isTextPlainMessage()) {
+                  emailList.add({
+                    "Id": "${subjectList[i].sequenceId}",
+                    "From": fromList[j].from[0].personalName,
+                    "Subject": subjectList[i].decodeSubject(),
+                    "Body": "",
+                    "On": "$onDate",
+                    "At": "$atTime",
+                  });
+                } else {
+                  emailList.add({
+                    "Id": "${subjectList[i].sequenceId}",
+                    "From": fromList[j].from[0].personalName,
+                    "Subject": subjectList[i].decodeTextPlainPart(),
+                    "Body": "",
+                    "On": "$onDate",
+                    "At": "$atTime",
+                  });
+                }
+              } else {
+                if (emailList
+                        .where((element) =>
+                            element["From"] ==
+                                fromList[j].from[0].personalName &&
+                            element["Subject"] ==
+                                subjectList[i].decodeSubject())
+                        .toList()
+                        .length ==
+                    0) {
+                  if (subjectList[i].isTextPlainMessage()) {
+                    emailList.add({
+                      "Id": "${subjectList[i].sequenceId}",
+                      "From": fromList[j].from[0].personalName,
+                      "Subject": subjectList[i].decodeSubject(),
+                      "Body": "",
+                      "On": "$onDate",
+                      "At": "$atTime",
+                    });
+                  } else {
+                    emailList.add({
+                      "Id": "${subjectList[i].sequenceId}",
+                      "From": fromList[j].from[0].personalName,
+                      "Subject": subjectList[i].decodeTextPlainPart(),
+                      "Body": "",
+                      "On": "$onDate",
+                      "At": "$atTime",
+                    });
+                  }
+                }
               }
             }
-          }
-        }
 
-        if (j == fromList.length - 1) {
-          if (i == subjectList.length - 1) {
-            // print(emailList);
-            for (var k = 0; k < emailList.length; k++) {
-              print(emailList[k]);
+            if (k == dateList.length - 1) {
+              if (j == fromList.length - 1) {
+                if (i == subjectList.length - 1) {
+                  for (var k = 0; k < emailList.length; k++) {
+                    for (var l = 0; l < unseenEmailList.length; l++) {
+                      if (emailList[k]["Id"] == '${unseenEmailList[l]}') {
+                        newEmailList.add(emailList[k]);
+                      }
+                    }
+                  }
+                  if (mounted) {
+                    setState(() {
+                      loading = false;
+                    });
+                  }
+                }
+              }
             }
-            setState(() {
-              loading = false;
-            });
           }
         }
       }
@@ -354,9 +436,11 @@ class _HomeState extends State<Home> {
   Future<void> getCredentialsFunc() async {
     final storage = SecureStorage();
     var cre = await storage.getCredential();
-    setState(() {
-      credentials = cre;
-    });
+    if (mounted) {
+      setState(() {
+        credentials = cre;
+      });
+    }
   }
 
   Future openWelcomeVoice() async {
@@ -378,9 +462,11 @@ class _HomeState extends State<Home> {
     // await flutterTts.setPitch(pitch);
 
     if (checkSpeech == true) {
-      setState(() {
-        lastWords = "Welcome to Neo Vision";
-      });
+      if (mounted) {
+        setState(() {
+          lastWords = "Welcome to Neo Vision";
+        });
+      }
     }
 
     checkSpeech = false;
@@ -408,62 +494,12 @@ class _HomeState extends State<Home> {
 
     if (!mounted) return;
 
-    setState(() {
-      _hasSpeech = hasSpeech;
-    });
+    if (mounted) {
+      setState(() {
+        _hasSpeech = hasSpeech;
+      });
+    }
   }
-
-  // initTts() {
-  //   flutterTts = FlutterTts();
-
-  //   if (isAndroid) {
-  //     _getDefaultEngine();
-  //   }
-
-  //   flutterTts.setStartHandler(() {
-  //     setState(() {
-  //       print("Playing");
-  //       ttsState = TtsState.playing;
-  //     });
-  //   });
-
-  //   flutterTts.setCompletionHandler(() {
-  //     setState(() {
-  //       print("Complete");
-  //       ttsState = TtsState.stopped;
-  //     });
-  //   });
-
-  //   flutterTts.setCancelHandler(() {
-  //     setState(() {
-  //       print("Cancel");
-  //       ttsState = TtsState.stopped;
-  //     });
-  //   });
-
-  //   if (isWeb || isIOS) {
-  //     flutterTts.setPauseHandler(() {
-  //       setState(() {
-  //         print("Paused");
-  //         ttsState = TtsState.paused;
-  //       });
-  //     });
-
-  //     flutterTts.setContinueHandler(() {
-  //       setState(() {
-  //         print("Continued");
-  //         ttsState = TtsState.continued;
-  //       });
-  //     });
-  //   }
-
-  //   flutterTts.setErrorHandler((msg) {
-  //     setState(() {
-  //       print("error: $msg");
-  //       ttsState = TtsState.stopped;
-  //     });
-  //   });
-  // }
 
   void startListening() {
     lastWords = '';
@@ -477,7 +513,6 @@ class _HomeState extends State<Home> {
         onSoundLevelChange: soundLevelListener,
         cancelOnError: true,
         listenMode: ListenMode.confirmation);
-    setState(() {});
   }
 
   // Future _getDefaultEngine() async {
@@ -494,7 +529,8 @@ class _HomeState extends State<Home> {
   var check = 0;
   var valueCheck = 0;
 
-  Future _speak(speechFromUser, text, String isReadAll) async {
+  Future _speak(
+      speechFromUser, text, String isReadAll, List readEmailList) async {
     readNext = false;
     // await flutterTts.setVolume(volume);
     // await flutterTts.setSpeechRate(rate);
@@ -503,41 +539,83 @@ class _HomeState extends State<Home> {
     if (text != null) {
       if (text.isNotEmpty) {
         if (checkSpeech == true) {
-          setState(() {
-            lastSpeechWord = text;
-            lastWords = lastSpeechWord;
-          });
+          if (mounted) {
+            setState(() {
+              lastSpeechWord = text;
+              lastWords = lastSpeechWord;
+            });
+          }
         }
         // await flutterTts.awaitSpeakCompletion(true);
         checkSpeech = false;
-        if (isReadAll == "readall") {
+        if (isReadAll == "readEmailWithDate") {
           check = 0;
-          valueCheck = 0;
+          if (isStop == true) {
+          } else {
 
-          for (var a = 0; a < emailList.length; a++) {
             String speechText =
-                "${emailList[a]["Subject"]} From ${emailList[a]["From"]}";
+                "${readEmailList[check]["Subject"]} From ${readEmailList[check]["From"]} On ${readEmailList[check]["On"]} At ${readEmailList[check]["At"]}.\n ${readEmailList[check]["Body"]}";
+            
+            await speakAll(speechText, speechFromUser,
+                    readEmailList[check]["Id"], readEmailList)
+                .then((value) {
+              print("$speechText ========> $value");
+              checkSpeech = true;
 
-            if (isStop == true) {
-            } else {
-              // print("$check == $valueCheck");
-              // if (check == valueCheck) {
-              if (a.toString() == "0") {
-                check = 0;
-                valueCheck = 0;
-              } else {
-                speechFromUser = "";
-              }
-              await speakAll(
-                      speechText, speechFromUser, emailList[a]["Id"], emailList)
-                  .then((value) {
-                print("$speechText ========> $value");
-                checkSpeech = true;
-
+              if (mounted) {
                 setState(() {
                   lastSpeechWord = speechText;
                   lastWords = lastSpeechWord;
                 });
+              }
+            });
+
+            String getsenderName = speechText.toString().substring(
+                speechText.toString().lastIndexOf("From "),
+                speechText.toString().length);
+            String getSubject = speechText
+                .toString()
+                .substring(0, speechText.toString().lastIndexOf("From "));
+            readEmail = {
+              "From": getsenderName.replaceAll(" From ", ""),
+              "Subject": getSubject
+            };
+          }
+        } else if (isReadAll == "readall") {
+          check = 0;
+          valueCheck = 0;
+
+          oldEmailList = emailList;
+
+          List allEmailList = [];
+
+          if (newEmailList.length == 0) {
+            if (isStop == true) {
+            } else {
+              allEmailList = emailList;
+
+              String speechText =
+                  "${allEmailList[check]["Subject"]} From ${allEmailList[check]["From"]} On ${allEmailList[check]["On"]} At ${allEmailList[check]["At"]}.\n ${allEmailList[check]["Body"]}";
+              // print("$check == $valueCheck");
+              // if (check == valueCheck) {
+              // if (a.toString() == "0") {
+              //   check = 0;
+              //   valueCheck = 0;
+              // } else {
+              //   speechFromUser = "";
+              // }
+              await speakAll(speechText, speechFromUser,
+                      allEmailList[check]["Id"], allEmailList)
+                  .then((value) {
+                print("$speechText ========> $value");
+                checkSpeech = true;
+
+                if (mounted) {
+                  setState(() {
+                    lastSpeechWord = speechText;
+                    lastWords = lastSpeechWord;
+                  });
+                }
               });
 
               String getsenderName = speechText.toString().substring(
@@ -551,6 +629,69 @@ class _HomeState extends State<Home> {
                 "Subject": getSubject
               };
               // }
+            }
+          } else {
+            for (var a = 0; a < newEmailList.length; a++) {
+              oldEmailList.removeWhere(
+                  (element) => element["Id"] == newEmailList[a]["Id"]);
+
+              if (a == newEmailList.length - 1) {
+                List readNewEmail = [
+                  {"Subject": "Read new emails"}
+                ];
+                List endOfNewEmail = [
+                  {"Subject": "End of new emails"}
+                ];
+
+                allEmailList =
+                    readNewEmail + newEmailList + endOfNewEmail + oldEmailList;
+
+                String speechText = "";
+                if (allEmailList[check]["From"] == null) {
+                  speechText = allEmailList[check]["Subject"];
+                } else {
+                  speechText =
+                      "${allEmailList[check]["Subject"]} From ${allEmailList[check]["From"]} On ${allEmailList[check]["On"]} At ${allEmailList[check]["At"]}.\n ${allEmailList[check]["Body"]}";
+                }
+
+                if (isStop == true) {
+                } else {
+                  // print("$check == $valueCheck");
+                  // if (check == valueCheck) {
+                  // if (a.toString() == "0") {
+                  //   check = 0;
+                  //   valueCheck = 0;
+                  // } else {
+                  //   speechFromUser = "";
+                  // }
+                  await speakAll(speechText, speechFromUser,
+                          allEmailList[check]["Id"], allEmailList)
+                      .then((value) {
+                    print("$speechText ========> $value");
+                    checkSpeech = true;
+
+                    if (mounted) {
+                      setState(() {
+                        lastSpeechWord = speechText;
+                        lastWords = lastSpeechWord;
+                      });
+                    }
+                  });
+
+                  String getsenderName = speechText.toString().substring(
+                      speechText.toString().lastIndexOf("From "),
+                      speechText.toString().length);
+                  String getSubject = speechText
+                      .toString()
+                      .substring(0, speechText.toString().lastIndexOf("From "));
+                  readEmail = {
+                    "From": getsenderName.replaceAll(" From ", ""),
+                    "Subject": getSubject
+                  };
+                  // }
+                }
+                // }
+              }
             }
           }
         } else if (isReadAll == "readnew") {
@@ -569,7 +710,7 @@ class _HomeState extends State<Home> {
                 if (b == unseenEmailList.length - 1) {
                   // for (var c = 0; c < unreadList.length; c++) {
                   String speechText =
-                      "${unreadList[check]["Subject"]} From ${unreadList[check]["From"]}";
+                      "${unreadList[check]["Subject"]} From ${unreadList[check]["From"]} On ${unreadList[check]["On"]} At ${unreadList[check]["At"]}.\n ${unreadList[check]["Body"]}";
 
                   if (isStop == true) {
                   } else {
@@ -582,16 +723,18 @@ class _HomeState extends State<Home> {
                     // print("One =============> $c == $check");
                     // if (c == check) {
                     //   print("Two ==> $c == $check");
-                    await speakAll(speechText, speechFromUser,
+                    await speakNewEmail(speechText, speechFromUser,
                             unreadList[check]["Id"], unreadList)
                         .then((value) {
                       print("$speechText ========> $value");
                       checkSpeech = true;
 
-                      setState(() {
-                        lastSpeechWord = speechText;
-                        lastWords = lastSpeechWord;
-                      });
+                      if (mounted) {
+                        setState(() {
+                          lastSpeechWord = speechText;
+                          lastWords = lastSpeechWord;
+                        });
+                      }
                     });
 
                     String getsenderName = speechText.toString().substring(
@@ -685,6 +828,7 @@ class _HomeState extends State<Home> {
 
   List voiceCommandList = [
     {"VoiceCommand": "check emails", "CurrentUse": false},
+    {"VoiceCommand": "read new emails", "CurrentUse": false},
     {"VoiceCommand": "read emails", "CurrentUse": false}
   ];
 
@@ -696,14 +840,16 @@ class _HomeState extends State<Home> {
 
   Future<void> resultForRead(String text) async {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
-    setState(() {
-      isStop = false;
-      userVoiceCommand = text;
-      if (text.toLowerCase() == "stop") {
-        remainText = null;
-        _stop();
-      }
-    });
+    if (mounted) {
+      setState(() {
+        isStop = false;
+        userVoiceCommand = text;
+        if (text.toLowerCase() == "stop") {
+          remainText = null;
+          _stop();
+        }
+      });
+    }
 
     if (text.toLowerCase().startsWith("check emails") ||
         text.toLowerCase().startsWith("check email") ||
@@ -747,7 +893,7 @@ class _HomeState extends State<Home> {
           _speak(
               text,
               "You have ${accountDetailList.length} Account. It is ${accountDetailList[0]["EmailAddress"]}. Do you want to Login with this account?",
-              "false");
+              "false", []);
         } else {
           String accounts = "";
           for (var j = 0; j < accountDetailList.length; j++) {
@@ -762,7 +908,7 @@ class _HomeState extends State<Home> {
               _speak(
                   text,
                   "You have ${accountDetailList.length} Accounts. $accounts",
-                  "false");
+                  "false", []);
             }
           }
         }
@@ -772,9 +918,11 @@ class _HomeState extends State<Home> {
           userVoiceCommand.toLowerCase() == "switch account") {
         if (text.toLowerCase() == "yes") {
           if (accountDetailList[0]["LoginType"] == "ImapLogin") {
-            setState(() {
-              loading = true;
-            });
+            if (mounted) {
+              setState(() {
+                loading = true;
+              });
+            }
 
             var userDetail = {
               "EmailAddress": "${accountDetailList[0]["EmailAddress"]}",
@@ -800,21 +948,27 @@ class _HomeState extends State<Home> {
                     isSecure: isImapServerSecure)
                 .then((value) {
               print("Connected Success");
-              setState(() {
-                loading = false;
-              });
+              if (mounted) {
+                setState(() {
+                  loading = false;
+                });
+              }
             }).catchError((error) {
               print("Connect Fail => $error");
-              setState(() {
-                loading = false;
-              });
-              _speak(text, "Connect fail!", "false");
+              if (mounted) {
+                setState(() {
+                  loading = false;
+                });
+              }
+              _speak(text, "Connect fail!", "false", []);
             });
             await client.login(userName, password).then((value) {
               print("Login Success");
-              setState(() {
-                loading = false;
-              });
+              if (mounted) {
+                setState(() {
+                  loading = false;
+                });
+              }
 
               List accountDetailList = [];
 
@@ -869,15 +1023,19 @@ class _HomeState extends State<Home> {
               );
             }).catchError((error) {
               print("Login Error");
-              setState(() {
-                loading = false;
-              });
-              _speak(text, "Login fail!", "false");
+              if (mounted) {
+                setState(() {
+                  loading = false;
+                });
+              }
+              _speak(text, "Login fail!", "false", []);
             });
           } else if (accountDetailList[0]["LoginType"] == "GoogleLogin") {
-            setState(() {
-              loading = true;
-            });
+            if (mounted) {
+              setState(() {
+                loading = true;
+              });
+            }
             await GMail().getHttpClient().then((value) {
               sharedPreferences.setString("LoginType", "GoogleLogin");
               Navigator.pushAndRemoveUntil(
@@ -886,10 +1044,12 @@ class _HomeState extends State<Home> {
                 (Route<dynamic> route) => false,
               );
             }).catchError((error) {
-              setState(() {
-                loading = false;
-              });
-              _speak(text, "Login fail!", "false");
+              if (mounted) {
+                setState(() {
+                  loading = false;
+                });
+              }
+              _speak(text, "Login fail!", "false", []);
             });
           }
         } else if (text.toLowerCase() == "no") {
@@ -901,9 +1061,11 @@ class _HomeState extends State<Home> {
             //
           } else {
             if (accountDetailList[k - 1]["LoginType"] == "ImapLogin") {
-              setState(() {
-                loading = true;
-              });
+              if (mounted) {
+                setState(() {
+                  loading = true;
+                });
+              }
 
               var userDetail = {
                 "EmailAddress": "${accountDetailList[k - 1]["EmailAddress"]}",
@@ -930,21 +1092,27 @@ class _HomeState extends State<Home> {
                       isSecure: isImapServerSecure)
                   .then((value) {
                 print("Connected Success");
-                setState(() {
-                  loading = false;
-                });
+                if (mounted) {
+                  setState(() {
+                    loading = false;
+                  });
+                }
               }).catchError((error) {
                 print("Connect Fail => $error");
-                setState(() {
-                  loading = false;
-                });
-                _speak(text, "Connect fail!", "false");
+                if (mounted) {
+                  setState(() {
+                    loading = false;
+                  });
+                }
+                _speak(text, "Connect fail!", "false", []);
               });
               await client.login(userName, password).then((value) {
                 print("Login Success");
-                setState(() {
-                  loading = false;
-                });
+                if (mounted) {
+                  setState(() {
+                    loading = false;
+                  });
+                }
 
                 List accountDetailList = [];
 
@@ -1000,15 +1168,19 @@ class _HomeState extends State<Home> {
                 );
               }).catchError((error) {
                 print("Login Error");
-                setState(() {
-                  loading = false;
-                });
-                _speak(text, "Login fail!", "false");
+                if (mounted) {
+                  setState(() {
+                    loading = false;
+                  });
+                }
+                _speak(text, "Login fail!", "false", []);
               });
             } else if (accountDetailList[k - 1]["LoginType"] == "GoogleLogin") {
-              setState(() {
-                loading = true;
-              });
+              if (mounted) {
+                setState(() {
+                  loading = true;
+                });
+              }
               await GMail().getHttpClient().then((value) {
                 sharedPreferences.setString("LoginType", "GoogleLogin");
                 Navigator.pushAndRemoveUntil(
@@ -1017,10 +1189,12 @@ class _HomeState extends State<Home> {
                   (Route<dynamic> route) => false,
                 );
               }).catchError((error) {
-                setState(() {
-                  loading = false;
-                });
-                _speak(text, "Login fail!", "false");
+                if (mounted) {
+                  setState(() {
+                    loading = false;
+                  });
+                }
+                _speak(text, "Login fail!", "false", []);
               });
             }
           }
@@ -1058,21 +1232,27 @@ class _HomeState extends State<Home> {
                         isSecure: isImapServerSecure)
                     .then((value) {
                   print("Connected Success");
-                  setState(() {
-                    loading = false;
-                  });
+                  if (mounted) {
+                    setState(() {
+                      loading = false;
+                    });
+                  }
                 }).catchError((error) {
                   print("Connect Fail => $error");
-                  setState(() {
-                    loading = false;
-                  });
-                  _speak(text, "Connect fail!", "false");
+                  if (mounted) {
+                    setState(() {
+                      loading = false;
+                    });
+                  }
+                  _speak(text, "Connect fail!", "false", []);
                 });
                 await client.login(userName, password).then((value) {
                   print("Login Success");
-                  setState(() {
-                    loading = false;
-                  });
+                  if (mounted) {
+                    setState(() {
+                      loading = false;
+                    });
+                  }
 
                   List accountDetailList = [];
 
@@ -1130,15 +1310,19 @@ class _HomeState extends State<Home> {
                   );
                 }).catchError((error) {
                   print("Login Error");
-                  setState(() {
-                    loading = false;
-                  });
-                  _speak(text, "Login fail!", "false");
+                  if (mounted) {
+                    setState(() {
+                      loading = false;
+                    });
+                  }
+                  _speak(text, "Login fail!", "false", []);
                 });
               } else if (accountDetailList[j]["LoginType"] == "GoogleLogin") {
-                setState(() {
-                  loading = true;
-                });
+                if (mounted) {
+                  setState(() {
+                    loading = true;
+                  });
+                }
                 await GMail().getHttpClient().then((value) {
                   sharedPreferences.setString("LoginType", "GoogleLogin");
                   Navigator.pushAndRemoveUntil(
@@ -1147,10 +1331,12 @@ class _HomeState extends State<Home> {
                     (Route<dynamic> route) => false,
                   );
                 }).catchError((error) {
-                  setState(() {
-                    loading = false;
-                  });
-                  _speak(text, "Login fail!", "false");
+                  if (mounted) {
+                    setState(() {
+                      loading = false;
+                    });
+                  }
+                  _speak(text, "Login fail!", "false", []);
                 });
               }
             }
@@ -1167,25 +1353,29 @@ class _HomeState extends State<Home> {
           text.toLowerCase() == "check my email" ||
           text.toLowerCase() == "check my emails") {
         if (unseenEmailList.length == 0) {
-          setState(() {
-            loading = true;
-          });
+          if (mounted) {
+            setState(() {
+              loading = true;
+            });
+          }
           if (sharedPreferences.getString("LoginType") == "ImapLogin") {
             imapExample().then((value) {
               if (unseenEmailList.length == 0 || unseenEmailList.length == 1) {
                 _speak(text, "There is ${unseenEmailList.length} New Email.",
-                    "false");
+                    "false", []);
               } else {
                 _speak(text, "There are ${unseenEmailList.length} New Emails.",
-                    "false");
+                    "false", []);
               }
             });
           } else if (sharedPreferences.getString("LoginType") ==
               "GoogleLogin") {
             await mails.getMessage().then((value) {
-              setState(() {
-                loading = false;
-              });
+              if (mounted) {
+                setState(() {
+                  loading = false;
+                });
+              }
               emailList = [];
               unseenEmailList = [];
               value.forEach((message) {
@@ -1206,12 +1396,42 @@ class _HomeState extends State<Home> {
                           if (header2.name == "Subject") {
                             var emailsubject = header2.value;
 
-                            emailList.add({
-                              "Id": "${message.id}",
-                              "From": "$res",
-                              "Subject": "$emailsubject",
-                              "Date": "",
-                              "To": ""
+                            message.payload.headers.forEach((header3) {
+                              if (header3.name == "Date") {
+                                var date = header3.value;
+                                DateFormat dateFormat =
+                                    DateFormat("dd MMM yyyy HH:mm:ss");
+                                DateTime dateTime =
+                                    dateFormat.parse(date.substring(5));
+                                String onDate =
+                                    "${dateTime.day}/${dateTime.month}/${dateTime.year}";
+                                String atTime =
+                                    "${dateTime.hour}:${dateTime.minute}";
+
+                                emailList.add({
+                                  "Id": "${message.id}",
+                                  "From": "$res",
+                                  "Subject": "$emailsubject",
+                                  "Body": "${message.snippet}",
+                                  "On": "$onDate",
+                                  "At": "$atTime"
+                                });
+
+                                for (var a = 0;
+                                    a < unseenEmailList.length;
+                                    a++) {
+                                  if (unseenEmailList[a] == message.id) {
+                                    newEmailList.add({
+                                      "Id": "${message.id}",
+                                      "From": "$res",
+                                      "Subject": "$emailsubject",
+                                      "Body": "${message.snippet}",
+                                      "On": "$onDate",
+                                      "At": "$atTime"
+                                    });
+                                  }
+                                }
+                              }
                             });
                           }
                         });
@@ -1223,52 +1443,42 @@ class _HomeState extends State<Home> {
 
               if (unseenEmailList.length == 0 || unseenEmailList.length == 1) {
                 _speak(text, "There is ${unseenEmailList.length} New Email.",
-                    "false");
+                    "false", []);
               } else {
                 _speak(text, "There are ${unseenEmailList.length} New Emails.",
-                    "false");
+                    "false", []);
               }
             });
           }
         } else {
           if (unseenEmailList.length == 0 || unseenEmailList.length == 1) {
-            _speak(
-                text, "There is ${unseenEmailList.length} New Email.", "false");
+            _speak(text, "There is ${unseenEmailList.length} New Email.",
+                "false", []);
           } else {
             _speak(text, "There are ${unseenEmailList.length} New Emails.",
-                "false");
+                "false", []);
           }
         }
       }
 
-      // if (text.toLowerCase() == "read new" ||
-      //     text.toLowerCase() == "read new email" ||
-      //     text.toLowerCase() == "read new emails" ||
-      //     text.toLowerCase() == "read all" ||
-      //     text.toLowerCase() == "read all email" ||
-      //     text.toLowerCase() == "read all emails") {
-      //   print("The text is ==> " + text);
-      //   await _speak(text, "$text", "readall");
-      // }
-
       if (text.toLowerCase() == "read new" ||
           text.toLowerCase() == "read new email" ||
-          text.toLowerCase() == "read new emails" ||
-          text.toLowerCase() == "read email" ||
-          text.toLowerCase() == "read emails") {
+          text.toLowerCase() == "read new emails") {
         print("The text is ==> " + text);
-        await _speak(text, "$text", "readnew");
+        await _speak(text, "$text", "readnew", []);
       }
       if (text.toLowerCase() == "read all" ||
           text.toLowerCase() == "read all email" ||
-          text.toLowerCase() == "read all emails") {
+          text.toLowerCase() == "read all emails" ||
+          text.toLowerCase() == "read email" ||
+          text.toLowerCase() == "read emails") {
         // check = 0;
         print("The text is ==> " + text);
-        await _speak(text, "$text", "readall");
+        await _speak(text, "$text", "readall", []);
       } else {
         if (text.toLowerCase() == "read this" ||
             text.toLowerCase() == "read it") {
-          _speak(text, "$lastSpeechWord", "false");
+          _speak(text, "$lastSpeechWord", "false", []);
         }
         if (text.toLowerCase().startsWith("read email from ") &&
             emailList.length != 0) {
@@ -1280,9 +1490,9 @@ class _HomeState extends State<Home> {
                   getsender.toLowerCase())
               .toList();
           if (specificEmail.length == 0) {
-            _speak(text, "You have no email from this user.", "false");
+            _speak(text, "You have no email from this user.", "false", []);
           } else {
-            _speak(text, "${specificEmail[0]["Subject"]}", "false");
+            _speak(text, "${specificEmail[0]["Subject"]}", "false", []);
           }
         } else if (text.toLowerCase().startsWith("read emails from ") &&
             emailList.length != 0) {
@@ -1294,9 +1504,9 @@ class _HomeState extends State<Home> {
                   getsender.toLowerCase())
               .toList();
           if (specificEmail.length == 0) {
-            _speak(text, "You have no email from this user.", "false");
+            _speak(text, "You have no email from this user.", "false", []);
           } else {
-            _speak(text, "${specificEmail[0]["Subject"]}", "false");
+            _speak(text, "${specificEmail[0]["Subject"]}", "false", []);
           }
         } else if (text.toLowerCase().startsWith("read ") &&
             emailList.length != 0) {
@@ -1310,10 +1520,75 @@ class _HomeState extends State<Home> {
               _speak(
                   text,
                   "${emailList[indexNum - 1]["Subject"]} From ${emailList[indexNum - 1]["From"]}",
-                  "false");
+                  "false", []);
             }
           }
         }
+      }
+
+      if (text.toLowerCase() == "read today email" ||
+          text.toLowerCase() == "read today emails" ||
+          text.toLowerCase() == "read today's email" ||
+          text.toLowerCase() == "read today's emails") {
+        DateTime dateTime = DateTime.now();
+        String todayDate = "${dateTime.day}/${dateTime.month}/${dateTime.year}";
+        List todayEmail =
+            emailList.where((element) => element["On"] == todayDate).toList();
+        await _speak(text, "$text", "readEmailWithDate", todayEmail);
+      }
+
+      if (text.toLowerCase() == "read yesterday email" ||
+          text.toLowerCase() == "read yesterday emails" ||
+          text.toLowerCase() == "read yesterday's email" ||
+          text.toLowerCase() == "read yesterday's emails") {
+        DateTime dateTime = DateTime.now().subtract(Duration(days:1));
+        String yesterday = "${dateTime.day}/${dateTime.month}/${dateTime.year}";
+        List yesterdayEmail =
+            emailList.where((element) => element["On"] == yesterday).toList();
+        await _speak(text, "$text", "readEmailWithDate", yesterdayEmail);
+      }
+
+      if (text.toLowerCase() == "read the day before yesterday email" ||
+          text.toLowerCase() == "read the day before yesterday emails" ||
+          text.toLowerCase() == "read the day before yesterday's email" ||
+          text.toLowerCase() == "read the day before yesterday's emails") {
+        DateTime dateTime = DateTime.now().subtract(Duration(days:2));
+        String theDay = "${dateTime.day}/${dateTime.month}/${dateTime.year}";
+        List emailOnThatDay =
+            emailList.where((element) => element["On"] == theDay).toList();
+        await _speak(text, "$text", "readEmailWithDate", emailOnThatDay);
+      }
+
+      if (text.toLowerCase() == "read this week email" ||
+          text.toLowerCase() == "read this week emails" ||
+          text.toLowerCase() == "read this week's email" ||
+          text.toLowerCase() == "read this week's emails") {
+        List<DateTime> weekDayList = [];
+        DateTime firstWeekDay = DateTime.now().subtract(Duration(days:DateTime.now().weekday-1));
+        weekDayList.add(firstWeekDay);
+        for(var aa = 0; aa < DateTime.now().weekday-1; aa++) {
+          DateTime lastWeekDay = firstWeekDay.add(Duration(days: aa+1));
+          weekDayList.add(lastWeekDay);
+        }
+
+        List emailOnThatDay = [];
+
+        for(var a = 0; a < weekDayList.length; a++) {
+          String theDay = "${weekDayList[a].day}/${weekDayList[a].month}/${weekDayList[a].year}";
+          emailOnThatDay = emailOnThatDay + emailList.where((element) => element["On"] == theDay).toList();
+        }
+        
+        await _speak(text, "$text", "readEmailWithDate", emailOnThatDay);
+      }
+
+      if (text.toLowerCase() == "read this month email" ||
+          text.toLowerCase() == "read this month emails" ||
+          text.toLowerCase() == "read this month's email" ||
+          text.toLowerCase() == "read this month's emails") {
+        DateTime dateTime = DateTime.now();
+        List emailOnThatDay =
+            emailList.where((element) => element["On"].substring(element["On"].indexOf("/")+1, element["On"].lastIndexOf("/")) == dateTime.month).toList();
+        await _speak(text, "$text", "readEmailWithDate", emailOnThatDay);
       }
 
       if ((text.toLowerCase() == "skip" || text.toLowerCase() == "next") &&
@@ -1326,12 +1601,12 @@ class _HomeState extends State<Home> {
           _speak(
               text,
               "${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["Subject"]} From ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["From"]}",
-              "false");
+              "false", []);
         } else {
           _speak(
               text,
               "${emailList[0]["Subject"]} From ${emailList[0]["From"]}",
-              "false");
+              "false", []);
         }
       }
     } else {
@@ -1346,7 +1621,7 @@ class _HomeState extends State<Home> {
           if (b == remainTextList.length - 1) {
             if (remainText != null) {
               if (remainText.length != 0) {
-                _speak(text, remainText, "false");
+                _speak(text, remainText, "false", []);
               }
             }
           }
@@ -1400,9 +1675,11 @@ class _HomeState extends State<Home> {
 
   Future<String> speak(String text, String textfromUser, isReadAll, id) async {
     print("The Text is ========> $text");
-    setState(() {
-      downloadAudioFile = true;
-    });
+    if (mounted) {
+      setState(() {
+        downloadAudioFile = true;
+      });
+    }
     String xmlLang;
     String xmlGender;
     String xmlName;
@@ -1457,23 +1734,27 @@ class _HomeState extends State<Home> {
     file.exists().then((value) {
       print(value);
       readNext = true;
-      setState(() {
-        downloadAudioFile = false;
-      });
+      if (mounted) {
+        setState(() {
+          downloadAudioFile = false;
+        });
+      }
       if (text == "Welcome to Neo Vision") {
         //
         readNext = true;
       } else {
-        setState(() {
-          speechList.add({"fromApp": "$text", "fromUser": "$textfromUser"});
-          if (controller.hasClients == true) {
-            controller.animateTo(
-              0.0,
-              curve: Curves.easeOut,
-              duration: const Duration(milliseconds: 300),
-            );
-          }
-        });
+        if (mounted) {
+          setState(() {
+            speechList.add({"fromApp": "$text", "fromUser": "$textfromUser"});
+            if (controller.hasClients == true) {
+              controller.animateTo(
+                0.0,
+                curve: Curves.easeOut,
+                duration: const Duration(milliseconds: 300),
+              );
+            }
+          });
+        }
       }
 
       audioPlayer = AudioPlayer(mode: PlayerMode.MEDIA_PLAYER);
@@ -1486,28 +1767,34 @@ class _HomeState extends State<Home> {
         if (sharedPreferences.getString("LoginType") == "GoogleLogin") {
           mails.setSeen(id);
           unseenEmailList.removeWhere((element) => element.toString() == id);
+          newEmailList.removeWhere((element) => element.toString() == id);
+          oldEmailList.add(emailList[check]);
         } else if (sharedPreferences.getString("LoginType") == "ImapLogin") {
-          imapSeen(id);
+          imapSeen(id, emailList[check]);
         }
       }).catchError((error) {
         print("error =======> $error");
         readNext = true;
       });
     }).catchError((error) {
-      setState(() {
-        downloadAudioFile = false;
-      });
+      if (mounted) {
+        setState(() {
+          downloadAudioFile = false;
+        });
+      }
     });
 
     return "complete";
   }
 
   Future<String> speakAll(
-      String text, String textfromUser, id, List emailList) async {
+      String text, String textfromUser, id, List userEmailList) async {
     print("The Text is ========> $text");
-    setState(() {
-      downloadAudioFile = true;
-    });
+    if (mounted) {
+      setState(() {
+        downloadAudioFile = true;
+      });
+    }
     String xmlLang;
     String xmlGender;
     String xmlName;
@@ -1560,32 +1847,36 @@ class _HomeState extends State<Home> {
     file.writeAsBytesSync(bytes);
 
     file.exists().then((value) async {
-      setState(() {
-        downloadAudioFile = false;
-      });
+      if (mounted) {
+        setState(() {
+          downloadAudioFile = false;
+        });
+      }
       readEmail = {
-        "From": emailList[check]["From"],
-        "Subject": emailList[check]["Subject"]
+        "From": userEmailList[check]["From"],
+        "Subject": userEmailList[check]["Subject"]
       };
       if (text == "Welcome to Neo Vision") {
         //
         readNext = true;
       } else {
-        setState(() {
-          if (check == 0) {
-            speechList.add({"fromApp": "$text", "fromUser": "$textfromUser"});
-          } else {
-            speechList.add({"fromApp": "$text", "fromUser": ""});
-          }
+        if (mounted) {
+          setState(() {
+            if (check == 0) {
+              speechList.add({"fromApp": "$text", "fromUser": "$textfromUser"});
+            } else {
+              speechList.add({"fromApp": "$text", "fromUser": ""});
+            }
 
-          if (controller.hasClients == true) {
-            controller.animateTo(
-              0.0,
-              curve: Curves.easeOut,
-              duration: const Duration(milliseconds: 300),
-            );
-          }
-        });
+            if (controller.hasClients == true) {
+              controller.animateTo(
+                0.0,
+                curve: Curves.easeOut,
+                duration: const Duration(milliseconds: 300),
+              );
+            }
+          });
+        }
       }
 
       audioPlayer = AudioPlayer(mode: PlayerMode.MEDIA_PLAYER);
@@ -1604,16 +1895,151 @@ class _HomeState extends State<Home> {
         if (sharedPreferences.getString("LoginType") == "GoogleLogin") {
           mails.setSeen(id);
           unseenEmailList.removeWhere((element) => element.toString() == id);
+          newEmailList.removeWhere((element) => element.toString() == id);
+          oldEmailList.add(userEmailList[check]);
         } else if (sharedPreferences.getString("LoginType") == "ImapLogin") {
-          imapSeen(id);
+          imapSeen(id, userEmailList[check]);
+        }
+        if (check + 1 != userEmailList.length) {
+          check = check + 1;
+          valueCheck = valueCheck + 1;
+          readNext = true;
+          String speechText = "";
+          if (userEmailList[check]["From"] == null) {
+            speechText = userEmailList[check]["Subject"];
+          } else {
+            speechText =
+                "${userEmailList[check]["Subject"]} From ${userEmailList[check]["From"]} On ${userEmailList[check]["On"]} At ${userEmailList[check]["At"]}.\n ${userEmailList[check]["Body"]}";
+          }
+          await speakAll(speechText, textfromUser, userEmailList[check]["Id"],
+              userEmailList);
+        }
+      });
+    });
+
+    return "complete";
+  }
+
+  Future<String> speakNewEmail(
+      String text, String textfromUser, id, List emailList) async {
+    print("The Text is ========> $text");
+    if (mounted) {
+      setState(() {
+        downloadAudioFile = true;
+      });
+    }
+    String xmlLang;
+    String xmlGender;
+    String xmlName;
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    if (sharedPreferences.getString("ChooseVoice") == null) {
+      xmlLang = "en-US";
+      xmlGender = "Female";
+      xmlName = "en-US-AriaNeural";
+    } else {
+      var getChooseVoice =
+          json.decode(sharedPreferences.getString("ChooseVoice"));
+      xmlLang = "${getChooseVoice["Locale"]}";
+      xmlGender = "${getChooseVoice["Gender"]}";
+      xmlName = "${getChooseVoice["ShortName"]}";
+    }
+    xml.XmlBuilder builder = xml.XmlBuilder();
+    builder.element('speak', nest: () {
+      builder.attribute('version', '1.0');
+      builder.attribute('xml:lang', '$xmlLang');
+      builder.element('voice', nest: () {
+        builder.attribute('xml:lang', '$xmlLang');
+        builder.attribute('xml:gender', '$xmlGender');
+        builder.attribute('name', '$xmlName');
+        builder.text(text);
+      });
+    });
+
+    String body = builder.build().toXmlString();
+
+    String url =
+        "https://eastasia.tts.speech.microsoft.com/cognitiveservices/v1";
+    Map<String, String> headers = {
+      'Authorization': 'Bearer ' + await _getAccessToken(),
+      'cache-control': 'no-cache',
+      'User-Agent': 'TTSPackage',
+      'X-Microsoft-OutputFormat': 'riff-24khz-16bit-mono-pcm',
+      'Content-Type': 'application/ssml+xml'
+    };
+
+    http.Response request = await http.post(url, headers: headers, body: body);
+
+    Uint8List bytes = request.bodyBytes;
+
+    final dir = await getApplicationDocumentsDirectory();
+    DateTime dateTime = DateTime.now();
+    String newfileName =
+        "${dateTime.year}${dateTime.month}${dateTime.day}${dateTime.hour}${dateTime.minute}${dateTime.second}${dateTime.millisecond}";
+    final file = new File('${dir.path}/$newfileName.mp3');
+
+    file.writeAsBytesSync(bytes);
+
+    file.exists().then((value) async {
+      if (mounted) {
+        setState(() {
+          downloadAudioFile = false;
+        });
+      }
+      readEmail = {
+        "From": emailList[check]["From"],
+        "Subject": emailList[check]["Subject"]
+      };
+      if (text == "Welcome to Neo Vision") {
+        //
+        readNext = true;
+      } else {
+        if (mounted) {
+          setState(() {
+            if (check == 0) {
+              speechList.add({"fromApp": "$text", "fromUser": "$textfromUser"});
+            } else {
+              speechList.add({"fromApp": "$text", "fromUser": ""});
+            }
+
+            if (controller.hasClients == true) {
+              controller.animateTo(
+                0.0,
+                curve: Curves.easeOut,
+                duration: const Duration(milliseconds: 300),
+              );
+            }
+          });
+        }
+      }
+
+      audioPlayer = AudioPlayer(mode: PlayerMode.MEDIA_PLAYER);
+
+      AudioPlayer.logEnabled = false;
+
+      await audioPlayer
+          .play(file.path, isLocal: true)
+          .then((value) {})
+          .catchError((error) {
+        print("error =======> $error");
+      });
+
+      audioPlayer.onPlayerCompletion.listen((event) async {
+        audioPlayer.stop();
+        if (sharedPreferences.getString("LoginType") == "GoogleLogin") {
+          mails.setSeen(id);
+          unseenEmailList.removeWhere((element) => element.toString() == id);
+          newEmailList.removeWhere((element) => element.toString() == id);
+          oldEmailList.add(emailList[check]);
+        } else if (sharedPreferences.getString("LoginType") == "ImapLogin") {
+          imapSeen(id, emailList[check]);
         }
         if (check + 1 != emailList.length) {
           check = check + 1;
           valueCheck = valueCheck + 1;
           readNext = true;
           String speechText =
-              "${emailList[check]["Subject"]} From ${emailList[check]["From"]}";
-          await speakAll(
+              "${emailList[check]["Subject"]} From ${emailList[check]["From"]} On ${emailList[check]["On"]} At ${emailList[check]["At"]}.\n ${emailList[check]["Body"]}";
+          await speakNewEmail(
               speechText, textfromUser, emailList[check]["Id"], emailList);
         }
       });
@@ -1622,7 +2048,7 @@ class _HomeState extends State<Home> {
     return "complete";
   }
 
-  Future imapSeen(id) async {
+  Future imapSeen(id, emaildata) async {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
     var userDetail = json.decode(sharedPreferences.getString("UserDetail"));
 
@@ -1645,26 +2071,32 @@ class _HomeState extends State<Home> {
       print("Connected Success");
     }).catchError((error) {
       print("Connect Fail => $error");
-      setState(() {
-        loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          loading = false;
+        });
+      }
     });
     await client.login(userName, password).then((value) {
       print("Login Success");
     }).catchError((error) {
       print("Login Error");
-      setState(() {
-        loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          loading = false;
+        });
+      }
     });
 
     await client.selectInbox().then((value) {
       print("select inbox success");
     }).catchError((error) {
       print("select inbox fail");
-      setState(() {
-        loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          loading = false;
+        });
+      }
     });
 
     List<MimeMessage> subjectList = [];
@@ -1687,6 +2119,8 @@ class _HomeState extends State<Home> {
           client.markSeen(messageSequence).then((value) {
             print("Mark Seen Success");
             unseenEmailList.removeWhere((element) => element.toString() == id);
+            newEmailList.removeWhere((element) => element.toString() == id);
+            oldEmailList.add(emaildata);
             // print(subjectList[i].flags);
           }).catchError((error) {
             print("Mark Seen Error $error");
@@ -1697,9 +2131,11 @@ class _HomeState extends State<Home> {
       }
     }).catchError((error) {
       print("error ==> $error");
-      setState(() {
-        loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          loading = false;
+        });
+      }
     });
   }
 
@@ -1713,9 +2149,11 @@ class _HomeState extends State<Home> {
         var newVoice = await Navigator.push(
             context, MaterialPageRoute(builder: (context) => ChooseVoice()));
 
-        setState(() {
-          chosenVoiceOwner = newVoice;
-        });
+        if (mounted) {
+          setState(() {
+            chosenVoiceOwner = newVoice;
+          });
+        }
         break;
       case PopupMenuChoices.version:
         //
@@ -1726,6 +2164,11 @@ class _HomeState extends State<Home> {
         sharedPreferences.clear();
         final storage = SecureStorage();
         storage.clear();
+        try {
+          _googleSignIn.disconnect();
+        } on Exception catch (e) {
+          print(e);
+        }
         Navigator.pushReplacement(
             context, MaterialPageRoute(builder: (context) => Login()));
         break;
@@ -1980,9 +2423,11 @@ class _HomeState extends State<Home> {
                                   // }
                                   _stop();
                                   if (readNext == true) {
-                                    setState(() {
-                                      changeBtnColor = "top";
-                                    });
+                                    if (mounted) {
+                                      setState(() {
+                                        changeBtnColor = "top";
+                                      });
+                                    }
                                     if (currentVoiceCommand == null) {
                                       currentVoiceCommand = 0;
                                     } else if (currentVoiceCommand ==
@@ -2000,7 +2445,7 @@ class _HomeState extends State<Home> {
                                     _speak(
                                         "",
                                         "${voiceCommandList[currentVoiceCommand]["VoiceCommand"]}",
-                                        "false");
+                                        "false", []);
                                   }
                                 },
                                 child: Container(
@@ -2032,15 +2477,17 @@ class _HomeState extends State<Home> {
                                           onTap: () {
                                             print("Left");
                                             _stop().then((value) {
-                                              setState(() {
-                                                changeBtnColor = "left";
-                                              });
+                                              if (mounted) {
+                                                setState(() {
+                                                  changeBtnColor = "left";
+                                                });
+                                              }
                                               if (readNext == true) {
                                                 if (emailList.length == 0) {
                                                   _speak(
                                                       "",
                                                       "There is no email.",
-                                                      "false");
+                                                      "false", []);
                                                 } else {
                                                   if (readEmail != null &&
                                                       emailList.indexWhere((element) =>
@@ -2054,12 +2501,12 @@ class _HomeState extends State<Home> {
                                                     _speak(
                                                         "",
                                                         "${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) - 1]["Subject"]} From ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) - 1]["From"]}",
-                                                        "false");
+                                                        "false", []);
                                                   } else {
                                                     _speak(
                                                         "",
                                                         "${emailList[0]["Subject"]} From ${emailList[0]["From"]}",
-                                                        "false");
+                                                        "false", []);
                                                   }
                                                 }
                                               }
@@ -2082,18 +2529,26 @@ class _HomeState extends State<Home> {
                                       ),
                                       InkWell(
                                         onLongPress: () async {
-                                          setState(() {
-                                            changeBtnColor = "center";
-                                          });
+                                          if (mounted) {
+                                            setState(() {
+                                              changeBtnColor = "center";
+                                            });
+                                          }
                                           _stop();
-                                          startListening();
+                                          audioPlayer.play("https://www.soundjay.com/buttons/sounds/beep-08b.mp3");
+                                          audioPlayer.onPlayerCompletion.listen((event) async {
+                                            audioPlayer.stop();
+                                            startListening();
+                                          });
                                         },
                                         onTap: () {
                                           // center button
                                           _stop();
-                                          setState(() {
-                                            changeBtnColor = "center";
-                                          });
+                                          if (mounted) {
+                                            setState(() {
+                                              changeBtnColor = "center";
+                                            });
+                                          }
 
                                           if (
                                               // voiceCommandList[currentVoiceCommand]["VoiceCommand"] !=
@@ -2146,15 +2601,17 @@ class _HomeState extends State<Home> {
                                           onTap: () {
                                             _stop().then((value) {
                                               print("Right");
-                                              setState(() {
-                                                changeBtnColor = "right";
-                                              });
+                                              if (mounted) {
+                                                setState(() {
+                                                  changeBtnColor = "right";
+                                                });
+                                              }
                                               if (readNext == true) {
                                                 if (emailList.length == 0) {
                                                   _speak(
                                                       "",
                                                       "There is no email.",
-                                                      "false");
+                                                      "false", []);
                                                 } else {
                                                   // print("jjjjjjjjjj=> " + lastReadMail.toString());
                                                   if (readEmail != null &&
@@ -2197,12 +2654,12 @@ class _HomeState extends State<Home> {
                                                     _speak(
                                                         "",
                                                         "${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["Subject"]} From ${emailList[emailList.indexWhere((element) => element["From"] == readEmail["From"] && element["Subject"] == readEmail["Subject"]) + 1]["From"]}",
-                                                        "false");
+                                                        "false", []);
                                                   } else {
                                                     _speak(
                                                         "",
                                                         "${emailList[0]["Subject"]} From ${emailList[0]["From"]}",
-                                                        "false");
+                                                        "false", []);
                                                   }
                                                 }
                                               }
@@ -2232,13 +2689,14 @@ class _HomeState extends State<Home> {
                                 radius: 50,
                                 onTap: () {
                                   print("Bottom");
-                                  // _stop();
-                                  setState(() {
-                                    changeBtnColor = "bottom";
-                                  });
+                                  if (mounted) {
+                                    setState(() {
+                                      changeBtnColor = "bottom";
+                                    });
+                                  }
                                   if (readNext == true) {
                                     if (lastSpeechWord.length != 0) {
-                                      _speak("", lastSpeechWord, "false");
+                                      _speak("", lastSpeechWord, "false", []);
                                     }
                                   }
                                 },
@@ -2279,38 +2737,46 @@ class _HomeState extends State<Home> {
 
   void errorListener(SpeechRecognitionError error) {
     // print("Received error status: $error, listening: ${speech.isListening}");
-    setState(() {
-      lastError = '${error.errorMsg} - ${error.permanent}';
-    });
+    if (mounted) {
+      setState(() {
+        lastError = '${error.errorMsg} - ${error.permanent}';
+      });
+    }
   }
 
   void statusListener(String status) {
     // print(
     // 'Received listener status: $status, listening: ${speech.isListening}');
-    setState(() {
-      lastStatus = '$status';
-    });
+    if (mounted) {
+      setState(() {
+        lastStatus = '$status';
+      });
+    }
   }
 
   void resultListener(SpeechRecognitionResult result) {
     ++resultListened;
     print('Result listener $resultListened');
-    setState(() {
-      lastWords = '${result.recognizedWords}';
-      print("Last Words ==> $lastWords");
+    if (mounted) {
+      setState(() {
+        lastWords = '${result.recognizedWords}';
+        print("Last Words ==> $lastWords");
 
-      if (speech.isListening == false) {
-        resultForRead(lastWords);
-      }
-    });
+        if (speech.isListening == false) {
+          resultForRead(lastWords);
+        }
+      });
+    }
   }
 
   void soundLevelListener(double level) {
     minSoundLevel = min(minSoundLevel, level);
     maxSoundLevel = max(maxSoundLevel, level);
     // print("sound level $level: $minSoundLevel - $maxSoundLevel ");
-    setState(() {
-      this.level = level;
-    });
+    if (mounted) {
+      setState(() {
+        this.level = level;
+      });
+    }
   }
 }
